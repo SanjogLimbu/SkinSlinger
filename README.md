@@ -4,7 +4,23 @@ A full-stack peer-to-peer marketplace for Steam game items (CS2, Dota 2, Rust, T
 
 Users log in via Steam OAUTH, list items from their inventory, and buy from each other using a USDC balance on Polygon. There is no middleman bot holding items: the seller trades the item to the buyer directly, and the server only releases payment when it can verify the item arrived and cannot be reverted.
 
-Stack: Next.js 16 (App Router) - React 19 - TypeScript - Tailwind CSS 4 - PostgreSQL - Prisma 7 - NextAuth - Vercel
+## Tech stack
+
+| Layer | Technology | Used for |
+| --- | --- | --- |
+| Framework | Next.js 16 (App Router), React 19 | Server-rendered pages and API route handlers |
+| Language | TypeScript 5 | Whole codebase except the browser extension |
+| Styling | Tailwind CSS 4 | All UI styling |
+| Database | PostgreSQL, Prisma 7 (`pg` driver adapter) | Users, listings, purchases, buy orders, deposits, cached prices |
+| Auth | NextAuth 4, `next-auth-steam`, Prisma adapter | Steam sign-in with JWT sessions |
+| Blockchain | viem, Polygon, Alchemy RPC | USDC deposits, sweeps and withdrawals, HD wallet deposit addresses |
+| Steam data | steamwebapi.com, Steam Community Market | Inventories, trade eligibility, item prices and price history |
+| Email | Resend, React email templates | Email verification and trade notifications |
+| Background jobs | Vercel Cron | Processing deposits and purchases, refreshing prices, removing stale listings |
+| Browser extension | Chrome Manifest V3, plain JavaScript | Filling Steam trade offers and reporting their status |
+| Charts | Hand-written SVG | Price history chart on item pages |
+| Hosting | Vercel, Vercel Analytics | Deployment and page analytics |
+| Tooling | ESLint 9 | Linting |
 
 ## What it does
 

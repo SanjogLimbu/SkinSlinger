@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output = "../lib/generated/prisma"
+  output   = "../lib/generated/prisma"
 }
 
 datasource db {
@@ -8,47 +8,47 @@ datasource db {
 }
 
 model user {
-  id String @id @default(cuid())
-  email String? @unique
-  emailVerified DateTime?
-  name String?
-  image String?
-  createdAt DateTime @default(now())
-  steam_trade_url String?
-  steam_id String?
-  cash Float @default(0)
-  sales Float @default(0)
-  purchases Float @default(0)
+  id                   String    @id @default(cuid())
+  email                String?   @unique
+  emailVerified        DateTime?
+  name                 String?
+  image                String?
+  createdAt            DateTime  @default(now())
+  steam_trade_url      String?
+  steam_id             String?
+  cash                 Float     @default(0)
+  sales                Float     @default(0)
+  purchases            Float     @default(0)
   lastInventoryRefresh DateTime?
-  inventoryCache Json?
+  inventoryCache       Json?
 
   notificationEmail String?
-  pendingEmail String?
-  emailCode String?
-  emailCodeExpires DateTime?
-  emailCodeAttempts Int @default(0)
+  pendingEmail      String?
+  emailCode         String?
+  emailCodeExpires  DateTime?
+  emailCodeAttempts Int       @default(0)
 
-  accounts account[]
-  sessions session[]
-  listings item_listing[]
-  purchases_as_buyer purchase[] @relation("buyer_purchases")
-  purchases_as_seller purchase[] @relation("seller_purchases")
-  buy_orders buy_order[]
+  accounts            account[]
+  sessions            session[]
+  listings            item_listing[]
+  purchases_as_buyer  purchase[]     @relation("buyer_purchases")
+  purchases_as_seller purchase[]     @relation("seller_purchases")
+  buy_orders          buy_order[]
 }
 
 model account {
-  id String @id @default(cuid())
-  userId String
-  type String
-  provider String
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
   providerAccountId String
-  refresh_token String? @db.Text
-  access_token String? @db.Text
-  expires_at Int?
-  token_type String?
-  scope String?
-  id_token String? @db.Text
-  session_state String?
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user user @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -56,82 +56,82 @@ model account {
 }
 
 model pendingAccount {
-  id String @id @default(cuid())
-  email String @unique
-  username String @unique
+  id       String   @id @default(cuid())
+  email    String   @unique
+  username String   @unique
   password String
-  token String @unique
-  expires DateTime
+  token    String   @unique
+  expires  DateTime
 }
 
 model session {
-  id String @id @default(cuid())
-  sessionToken String @unique
-  userId String
-  expires DateTime
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
 
   user user @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model crypto_deposit {
-  id String @id @default(cuid())
-  userId String
-  address String @unique
-  index Int @unique
+  id         String   @id @default(cuid())
+  userId     String
+  address    String   @unique
+  index      Int      @unique
   amountUsdc Float
-  status String @default("pending")
-  txHash String?
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  status     String   @default("pending")
+  txHash     String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 }
 
 model deposit_counter {
-  id String @id
-  value Int @default(0)
+  id        String @id
+  value     Int    @default(0)
   lastBlock BigInt @default(0)
 }
 
 model item {
-  marketName String @id
+  marketName     String   @id
   marketHashName String
-  price Float
-  game String
-  updatedAt DateTime @default(now()) @updatedAt
+  price          Float
+  game           String
+  updatedAt      DateTime @default(now()) @updatedAt
 }
 
 model item_float {
-  assetId String @id
+  assetId    String   @id
   floatValue Float?
-  paintSeed Int?
-  stickers Json?
-  fetchedAt DateTime @default(now())
+  paintSeed  Int?
+  stickers   Json?
+  fetchedAt  DateTime @default(now())
 }
 
 model item_listing {
-  id String @id @default(cuid())
-  createdAt DateTime @default(now())
-  userId String
-  assetId String @unique
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  userId     String
+  assetId    String   @unique
   marketName String
-  price Float
-  game String?
-  icon String?
-  hexColor String?
-  commodity Boolean @default(false)
+  price      Float
+  game       String?
+  icon       String?
+  hexColor   String?
+  commodity  Boolean  @default(false)
 
   user user @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model buy_order {
-  id String @id @default(cuid())
-  createdAt DateTime @default(now())
-  userId String
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  userId     String
   marketName String
-  price Float
-  quantity Int
-  game String?
-  icon String?
-  hexColor String?
+  price      Float
+  quantity   Int
+  game       String?
+  icon       String?
+  hexColor   String?
 
   user user @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -141,32 +141,31 @@ model buy_order {
 // for the seller extension to pick up (via pending-sales), cancel in their real
 // Steam session, and confirm (via offer-status), which removes the row.
 model cancelled_trade_offer {
-  tradeOfferId String @id
-  sellerId String
-  createdAt DateTime @default(now())
+  tradeOfferId String   @id
+  sellerId     String
+  createdAt    DateTime @default(now())
 }
 
 model purchase {
-  id String @id @default(cuid())
-  createdAt DateTime @default(now())
-  status String @default("pending")
-  deliveredAt DateTime?
+  id               String    @id @default(cuid())
+  createdAt        DateTime  @default(now())
+  status           String    @default("pending")
+  deliveredAt      DateTime?
   tradeOfferSentAt DateTime?
-  tradeOfferId String?
-  price Float
-  assetId String
-  marketName String
-  game String?
-  icon String?
-  hexColor String?
-  commodity Boolean @default(false)
-  buyerTradeUrl String?
-  buyerPreCount Int?
+  tradeOfferId     String?
+  price            Float
+  assetId          String
+  marketName       String
+  game             String?
+  icon             String?
+  hexColor         String?
+  commodity        Boolean   @default(false)
+  buyerTradeUrl    String?
+  buyerPreCount    Int?
 
-  buyerId String
+  buyerId  String
   sellerId String
 
-  buyer user @relation("buyer_purchases", fields: [buyerId], references: [id])
+  buyer  user @relation("buyer_purchases", fields: [buyerId], references: [id])
   seller user @relation("seller_purchases", fields: [sellerId], references: [id])
 }
-
