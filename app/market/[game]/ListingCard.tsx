@@ -1,12 +1,12 @@
 "use client"
 
-import Image from "next/image";
-import Link from "next/link";
-import { memo } from "react";
-import { DisplayCard } from "./Market";
-import FloatBar from "@/app/components/FloatBar";
-import { toSlug } from "@/app/lib/site";
-import { rarityBackground } from "@/lib/rarity";
+import Image from "next/image"
+import Link from "next/link"
+import { memo } from "react"
+import { DisplayCard } from "./Market"
+import FloatBar from "@/app/components/FloatBar"
+import { toSlug } from "@/app/lib/site"
+import { rarityBackground } from "@/lib/rarity"
 
 
 //
@@ -29,7 +29,7 @@ function ListingCard(
     }:
     DisplayCard & { currentUserId: string | null, onBuy: () => void, onPreview: () => void })
 {
-    const isOwned = currentUserId !== null && currentUserId === sellerId;
+    const isOwned = currentUserId !== null && currentUserId === sellerId
 
     return (
         <div
@@ -112,7 +112,7 @@ function ListingCard(
                 </div>
             </div>
         </div>
-    );
+    )
 }
 
 // onBuy/onPreview are fresh closures every parent render — ignore them and compare

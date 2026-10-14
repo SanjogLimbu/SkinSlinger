@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import Image from "next/image";
+import Image from "next/image"
 
 //
 
@@ -60,23 +60,23 @@ export default function SellItemCard({ market_name, quantity, icon, hexColor, pr
                             value={priceStr}
                             placeholder="0.00"
                             onChange={e => {
-                                const val = e.target.value;
+                                const val = e.target.value
 
                                 // Typing past the listing cap snaps back to it
                                 if (maxPrice !== null && parseFloat(val) > maxPrice) {
-                                    setPriceStr(maxPrice.toFixed(2));
+                                    setPriceStr(maxPrice.toFixed(2))
 
-                                    return;
+                                    return
                                 }
 
                                 // Digits with at most two decimals: no negatives, no fractions of a cent
-                                if (/^\d*\.?\d{0,2}$/.test(val)) setPriceStr(val);
+                                if (/^\d*\.?\d{0,2}$/.test(val)) setPriceStr(val)
                             }}
                             onBlur={() => {
                                 // Checked on blur, not per keystroke, so "12" can be typed past "1"
-                                const lowest = minPrice ?? 0.01;
+                                const lowest = minPrice ?? 0.01
 
-                                if (parseFloat(priceStr) < lowest) setPriceStr(lowest.toFixed(2));
+                                if (parseFloat(priceStr) < lowest) setPriceStr(lowest.toFixed(2))
                             }}
                             className="bg-primary rounded-sm w-16 h-7 text-center outline-none border border-gray-600 text-sm"
                         />

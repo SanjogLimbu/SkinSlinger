@@ -4,10 +4,10 @@ const SEGMENTS = [
     { label: 'FT', from: 0.15, to: 0.38, color: 'rgb(220, 178, 89)' },
     { label: 'WW', from: 0.38, to: 0.45, color: 'rgb(187, 100, 84)' },
     { label: 'BS', from: 0.45, to: 1.00, color: 'rgb(132, 69, 59)' },
-] as const;
+] as const
 
 export default function FloatBar({ value, showLabels = true }: { value: number; showLabels?: boolean }) {
-    const pct = Math.min(Math.max(value, 0), 1) * 100;
+    const pct = Math.min(Math.max(value, 0), 1) * 100
 
     return (
         <div className="w-full flex flex-col gap-1">
@@ -41,5 +41,5 @@ export default function FloatBar({ value, showLabels = true }: { value: number; 
                 </p>
             )}
         </div>
-    );
+    )
 }

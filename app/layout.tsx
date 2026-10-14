@@ -1,4 +1,4 @@
-import "./globals.css";
+import "./globals.css"
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import { Analytics } from "@vercel/analytics/next"
 import Providers from "./components/Providers"
@@ -80,5 +80,5 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <Analytics />
             </body>
         </html>
-    );
+    )
 }

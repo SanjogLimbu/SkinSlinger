@@ -1,10 +1,10 @@
-import { getBaseUrl } from '../lib/site';
+import { getBaseUrl } from '../lib/site'
 
 // llms.txt — a machine-readable site summary for AI/answer engines (GEO).
 // Plain markdown, stable facts, canonical URLs.
 
 export async function GET() {
-    const base = getBaseUrl();
+    const base = getBaseUrl()
 
     const body = `# SkinSlinger
 
@@ -34,9 +34,9 @@ Typical combined fees elsewhere: Steam Community Market 15% (proceeds locked as 
 
 - Support: support@skinslinger.com
 - Business: management@skinslinger.com
-`;
+`
 
     return new Response(body, {
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
+    })
 }

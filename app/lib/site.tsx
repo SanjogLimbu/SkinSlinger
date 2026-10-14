@@ -1,7 +1,7 @@
 // Shared helpers used across pages. Lives inside app/ (no page.tsx here, so it's not a route).
 
 export function toSlug(name: string): string {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 export const GAME_NAMES: Record<string, string> = {
@@ -9,14 +9,14 @@ export const GAME_NAMES: Record<string, string> = {
     Dota2: "Dota 2",
     Rust:  "Rust",
     TF2:   "Team Fortress 2",
-};
+}
 
 export const GAME_SLUGS: Record<string, string> = {
     CS2:   "cs2",
     Dota2: "dota2",
     Rust:  "rust",
     TF2:   "tf2",
-};
+}
 
 /**
  * Single source of truth for the site's absolute base URL.
@@ -24,18 +24,18 @@ export const GAME_SLUGS: Record<string, string> = {
  * in metadata and JSON-LD.
  */
 export function getBaseUrl(): string {
-    const url = process.env.NEXTAUTH_URL;
+    const url = process.env.NEXTAUTH_URL
 
     if (!url) {
         if (process.env.NODE_ENV === 'production') {
-            console.warn('NEXTAUTH_URL is not set — absolute URLs in metadata/JSON-LD will be wrong');
+            console.warn('NEXTAUTH_URL is not set — absolute URLs in metadata/JSON-LD will be wrong')
         }
 
-        return 'http://localhost:3000';
+        return 'http://localhost:3000'
     }
 
 
-    return url.replace(/\/$/, '');
+    return url.replace(/\/$/, '')
 }
 
 /**
@@ -48,5 +48,5 @@ export function JsonLd({ data }: { data: object }) {
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, '\\u003c') }}
         />
-    );
+    )
 }

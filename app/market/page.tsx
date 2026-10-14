@@ -1,5 +1,5 @@
-import { permanentRedirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation"
 
 export default function MarketPage() {
-    permanentRedirect("/market/cs2");
+    permanentRedirect("/market/cs2")
 }

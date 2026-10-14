@@ -1,7 +1,7 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { sendTradeOfferSentEmail } from "@/lib/tradeNotifications";
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/db"
+import { sendTradeOfferSentEmail } from "@/lib/tradeNotifications"
 
 //
 
@@ -16,15 +16,15 @@ import { sendTradeOfferSentEmail } from "@/lib/tradeNotifications";
 // only ever advances on real inventory checks (see cron/process-purchases).
 export async function POST(req: Request) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(authOptions)
 
         if (!session?.user?.id) {
-            return Response.json({ error: "Unauthorized" }, { status: 401 });
+            return Response.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const body = await req.json();
-        const updates = body.updates ?? [];
-        const cancelledOfferIds = body.cancelledOfferIds ?? [];
+        const body = await req.json()
+        const updates = body.updates ?? []
+        const cancelledOfferIds = body.cancelledOfferIds ?? []
 
         const valid = Array.isArray(updates)
             && updates.every((u: { orderId?: unknown; state?: unknown; tradeOfferId?: unknown }) =>
@@ -33,10 +33,10 @@ export async function POST(req: Request) {
                 && (u.tradeOfferId === undefined || typeof u.tradeOfferId === "string")
             )
             && Array.isArray(cancelledOfferIds) && cancelledOfferIds.every((id: unknown) => typeof id === "string")
-            && (updates.length > 0 || cancelledOfferIds.length > 0);
+            && (updates.length > 0 || cancelledOfferIds.length > 0)
 
         if (!valid) {
-            return Response.json({ error: "Invalid request" }, { status: 400 });
+            return Response.json({ error: "Invalid request" }, { status: 400 })
         }
 
         // Offers the extension confirmed as cancelled on Steam (or found already dead):
@@ -44,11 +44,11 @@ export async function POST(req: Request) {
         if (cancelledOfferIds.length > 0) {
             await prisma.cancelled_trade_offer.deleteMany({
                 where: { tradeOfferId: { in: cancelledOfferIds }, sellerId: session.user.id },
-            });
+            })
         }
 
         if (updates.length === 0) {
-            return Response.json(null, { status: 200 });
+            return Response.json(null, { status: 200 })
         }
 
         const purchases = await prisma.purchase.findMany({
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
                 buyer: { select: { notificationEmail: true } },
                 seller: { select: { name: true } },
             },
-        });
+        })
 
         // The extension polls asynchronously, so an order can complete or change hands
         // between its pending-sales fetch and this report: skip those rather than
@@ -66,52 +66,52 @@ export async function POST(req: Request) {
             purchases
                 .filter(p => p.sellerId === session.user.id && p.status === "pending")
                 .map(p => [p.id, p])
-        );
+        )
 
-        const newlySent: typeof purchases = [];
+        const newlySent: typeof purchases = []
 
         for (const update of updates) {
-            const purchase = owned.get(update.orderId);
-            if (!purchase) continue;
+            const purchase = owned.get(update.orderId)
+            if (!purchase) continue
 
             if (update.state === "active") {
                 const marked = await prisma.purchase.updateMany({
                     where: { id: purchase.id, status: "pending", tradeOfferSentAt: null },
                     data: { tradeOfferSentAt: new Date() },
-                });
+                })
 
                 if (update.tradeOfferId) {
                     await prisma.purchase.updateMany({
                         where: { id: purchase.id, status: "pending" },
                         data: { tradeOfferId: update.tradeOfferId },
-                    });
+                    })
                 }
 
-                if (marked.count > 0) newlySent.push(purchase);
+                if (marked.count > 0) newlySent.push(purchase)
             }
 
             if (update.state === "gone") {
                 await prisma.purchase.updateMany({
                     where: { id: purchase.id, status: "pending" },
                     data: { tradeOfferSentAt: null, tradeOfferId: null },
-                });
+                })
             }
 
             if (update.state === "accepted") {
                 await prisma.purchase.updateMany({
                     where: { id: purchase.id, status: "pending" },
                     data: { status: "holding", deliveredAt: new Date() },
-                });
+                })
             }
         }
 
         // One report can cover orders from several buyers: group the emails per buyer.
-        const byBuyer = new Map<string, typeof newlySent>();
+        const byBuyer = new Map<string, typeof newlySent>()
         for (const p of newlySent) {
-            if (!p.buyer.notificationEmail) continue;
-            const group = byBuyer.get(p.buyer.notificationEmail) ?? [];
-            group.push(p);
-            byBuyer.set(p.buyer.notificationEmail, group);
+            if (!p.buyer.notificationEmail) continue
+            const group = byBuyer.get(p.buyer.notificationEmail) ?? []
+            group.push(p)
+            byBuyer.set(p.buyer.notificationEmail, group)
         }
 
         for (const [buyerEmail, group] of byBuyer) {
@@ -119,14 +119,14 @@ export async function POST(req: Request) {
                 buyerEmail,
                 group[0].seller.name ?? "The seller",
                 group.map(p => ({ marketName: p.marketName, price: p.price })),
-            );
+            )
         }
 
-        return Response.json(null, { status: 200 });
+        return Response.json(null, { status: 200 })
     }
     catch (error) {
-        console.error(error);
+        console.error(error)
 
-        return Response.json({ error: "Server error" }, { status: 500 });
+        return Response.json({ error: "Server error" }, { status: 500 })
     }
 }

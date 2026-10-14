@@ -1,36 +1,36 @@
-"use client";
+"use client"
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { SteamItem } from '@/lib/steam';
-import { stickerValue } from '@/lib/pricing';
-import InventoryItemCard from './InventoryItemCard';
-import RightPanel from './RightInventoryPanel';
-import LeftInventoryPanel from './LeftInventoryPanel';
-import SteamUrlPrompt from '@/app/components/SteamUrlPrompt';
-import { FormPrompt } from '@/app/components/Prompt';
-import { useEmailVerification } from '@/app/components/useEmailVerification';
+import { SteamItem } from '@/lib/steam'
+import { stickerValue } from '@/lib/pricing'
+import InventoryItemCard from './InventoryItemCard'
+import RightPanel from './RightInventoryPanel'
+import LeftInventoryPanel from './LeftInventoryPanel'
+import SteamUrlPrompt from '@/app/components/SteamUrlPrompt'
+import { FormPrompt } from '@/app/components/Prompt'
+import { useEmailVerification } from '@/app/components/useEmailVerification'
 
 //
 
 function timeAgo(date: Date): string {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
 
-    if (seconds < 60) return "just now";
+    if (seconds < 60) return "just now"
 
-    const minutes = Math.floor(seconds / 60);
+    const minutes = Math.floor(seconds / 60)
 
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 60) return `${minutes}m ago`
 
-    const hours = Math.floor(minutes / 60);
+    const hours = Math.floor(minutes / 60)
 
-    return `${hours}h ago`;
+    return `${hours}h ago`
 }
 
 //
 
 function PromptNotificationEmail({ onDone }: { onDone: () => void }) {
-    const { step, email, setEmail, code, setCode, loading, error, sendCode, confirm } = useEmailVerification();
+    const { step, email, setEmail, code, setCode, loading, error, sendCode, confirm } = useEmailVerification()
 
     return (
         <FormPrompt
@@ -121,89 +121,89 @@ function PromptNotificationEmail({ onDone }: { onDone: () => void }) {
 
 
 export default function InventoryClient({ isSteamLinked, hasNotificationEmail, inventory, lastRefresh, inventoryToken }: { isSteamLinked: boolean, hasNotificationEmail: boolean, inventory: SteamItem[], lastRefresh: Date, inventoryToken: string }) {
-    const router = useRouter();
-    const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+    const router = useRouter()
+    const [showEmailPrompt, setShowEmailPrompt] = useState(false)
     const [selling, setSelling] = useState<SteamItem[]>([])
     const [listedAssetIds, setListedAssetIds] = useState(new Set<string>())
     const [gameFilter, setGameFilter] = useState<"CS2" | "Dota2" | "Rust" | "TF2">("CS2")
-    const [lastRefreshDisplay, setLastRefreshDisplay] = useState(() => timeAgo(lastRefresh));
+    const [lastRefreshDisplay, setLastRefreshDisplay] = useState(() => timeAgo(lastRefresh))
 
     // null = still loading, number = resolved (0 means not found / too cheap)
     const [livePrices, setLivePrices] = useState<Map<string, number | null>>(() => {
-        const map = new Map<string, number | null>();
+        const map = new Map<string, number | null>()
 
         for (const item of inventory) {
             if (!map.has(item.market_name)) {
-                map.set(item.market_name, item.price > 0 ? item.price : null);
+                map.set(item.market_name, item.price > 0 ? item.price : null)
             }
         }
 
 
-        return map;
-    });
+        return map
+    })
 
 
     useEffect(() => {
-        setLastRefreshDisplay(timeAgo(lastRefresh));
+        setLastRefreshDisplay(timeAgo(lastRefresh))
 
-        const id = setInterval(() => setLastRefreshDisplay(timeAgo(lastRefresh)), 10000);
-        return () => clearInterval(id);
-    }, [lastRefresh]);
+        const id = setInterval(() => setLastRefreshDisplay(timeAgo(lastRefresh)), 10000)
+        return () => clearInterval(id)
+    }, [lastRefresh])
 
 
     useEffect(() => {
         setLivePrices(prev => {
-            const next = new Map(prev);
+            const next = new Map(prev)
 
             for (const item of inventory) {
                 if (!next.has(item.market_name)) {
-                    next.set(item.market_name, item.price > 0 ? item.price : null);
+                    next.set(item.market_name, item.price > 0 ? item.price : null)
                 }
             }
 
 
-            return next;
-        });
-    }, [inventory]);
+            return next
+        })
+    }, [inventory])
 
 
     useEffect(() => {
-        const seen = new Set<string>();
+        const seen = new Set<string>()
 
         const unpriced = inventory.filter(i => {
-            if (i.price > 0 || seen.has(i.market_name)) return false;
+            if (i.price > 0 || seen.has(i.market_name)) return false
 
-            seen.add(i.market_name);
+            seen.add(i.market_name)
 
-            return true;
-        });
+            return true
+        })
 
 
         // Collect unique sticker names from items that have stickers
-        const stickerSeen = new Set<string>();
-        const stickerItems: { market_name: string; market_hash_name: string; game: string }[] = [];
+        const stickerSeen = new Set<string>()
+        const stickerItems: { market_name: string; market_hash_name: string; game: string }[] = []
 
         for (const item of inventory) {
-            if (!item.stickers) continue;
+            if (!item.stickers) continue
 
             for (const s of item.stickers) {
-                const name = `Sticker | ${s.name}`;
+                const name = `Sticker | ${s.name}`
 
                 if (!stickerSeen.has(name)) {
-                    stickerSeen.add(name);
-                    stickerItems.push({ market_name: name, market_hash_name: name, game: 'CS2' });
+                    stickerSeen.add(name)
+                    stickerItems.push({ market_name: name, market_hash_name: name, game: 'CS2' })
                 }
             }
         }
 
 
         if (unpriced.length === 0 && stickerItems.length === 0) {
-            return;
+            return
         }
 
-        const controller = new AbortController();
+        const controller = new AbortController()
 
-        (async () => {
+        ;(async () => {
             try {
                 const res = await fetch('/api/prices', {
                     method: 'POST',
@@ -213,135 +213,135 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
                         ...stickerItems,
                     ] }),
                     signal: controller.signal
-                });
+                })
 
 
-                if (!res.body) return;
+                if (!res.body) return
 
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
+                const reader = res.body.getReader()
+                const decoder = new TextDecoder()
+                let buffer = ''
 
                 
                 // Batch streamed prices into one state flush per interval — a setState
                 // per NDJSON line re-renders the whole grid for every single item.
-                let pending = new Map<string, number>();
-                let flushTimer: ReturnType<typeof setTimeout> | null = null;
+                let pending = new Map<string, number>()
+                let flushTimer: ReturnType<typeof setTimeout> | null = null
 
                 const flush = () => {
                     if (flushTimer) {
-                        clearTimeout(flushTimer);
-                        flushTimer = null;
+                        clearTimeout(flushTimer)
+                        flushTimer = null
                     }
 
-                    if (pending.size === 0) return;
+                    if (pending.size === 0) return
 
-                    const updates = pending;
-                    pending = new Map();
+                    const updates = pending
+                    pending = new Map()
 
                     setLivePrices(prev => {
-                        const next = new Map(prev);
+                        const next = new Map(prev)
                         for (const [name, price] of updates) {
-                            next.set(name, price);
+                            next.set(name, price)
                         }
 
-                        return next;
-                    });
-                };
+                        return next
+                    })
+                }
 
                 try {
                     while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-                        buffer += decoder.decode(value, { stream: true });
-                        const lines = buffer.split('\n');
-                        buffer = lines.pop()!;
+                        const { done, value } = await reader.read()
+                        if (done) break
+                        buffer += decoder.decode(value, { stream: true })
+                        const lines = buffer.split('\n')
+                        buffer = lines.pop()!
                         for (const line of lines) {
-                            if (!line.trim()) continue;
+                            if (!line.trim()) continue
                             // Per-line guard: one malformed line shouldn't drop the batch
                             // or kill the rest of the stream.
                             try {
-                                const { market_name, price } = JSON.parse(line);
-                                pending.set(market_name, price);
+                                const { market_name, price } = JSON.parse(line)
+                                pending.set(market_name, price)
                             } catch { }
                         }
                         // Timer (not chunk-arrival) drives the flush, so prices parsed just
                         // before a slow upstream item don't sit unrendered until the next chunk.
                         if (pending.size > 0 && !flushTimer) {
-                            flushTimer = setTimeout(flush, 150);
+                            flushTimer = setTimeout(flush, 150)
                         }
                     }
                 } finally {
-                    flush();
+                    flush()
                 }
             } catch (e) {
-                if ((e as Error).name === 'AbortError') return;
+                if ((e as Error).name === 'AbortError') return
                 // On error, leave prices as null — items stay visible rather than disappearing
             }
-        })();
+        })()
 
-        return () => controller.abort();
-    }, []);
+        return () => controller.abort()
+    }, [])
 
 
     function onTradeUrlLinked() {
-        if (!hasNotificationEmail) setShowEmailPrompt(true);
-        router.refresh();
+        if (!hasNotificationEmail) setShowEmailPrompt(true)
+        router.refresh()
     }
 
 
-    const filtered = inventory.filter(i => i.game === gameFilter && !listedAssetIds.has(i.assetId));
+    const filtered = inventory.filter(i => i.game === gameFilter && !listedAssetIds.has(i.assetId))
 
     const stackedInventory = (() => {
-        const result: (SteamItem & { quantity: number })[] = [];
-        const commodityMap = new Map<string, SteamItem & { quantity: number }>();
+        const result: (SteamItem & { quantity: number })[] = []
+        const commodityMap = new Map<string, SteamItem & { quantity: number }>()
 
         for (const item of filtered) {
-            const priceState = livePrices.get(item.market_name);
+            const priceState = livePrices.get(item.market_name)
 
-            const basePrice = priceState ?? 0;
-            const price = basePrice + stickerValue(item.stickers, name => livePrices.get(name) ?? 0);
+            const basePrice = priceState ?? 0
+            const price = basePrice + stickerValue(item.stickers, name => livePrices.get(name) ?? 0)
 
 
             // Hide junk: items worth <= $0.10, but only once every price component has
             // resolved (base + each sticker). Unresolved components keep the item visible,
             // so sticker value arriving late (or a failed stream) can't hide a skin whose stickers carry its real value.
             const stickersResolved = !item.stickers
-                || item.stickers.every(s => typeof livePrices.get(`Sticker | ${s.name}`) === "number");
+                || item.stickers.every(s => typeof livePrices.get(`Sticker | ${s.name}`) === "number")
             if (typeof priceState === "number" && stickersResolved && price <= 0.10) {
-                continue;
+                continue
             }
 
-            const itemWithPrice = { ...item, price };
+            const itemWithPrice = { ...item, price }
 
             if (item.commodity) {
-                const existing = commodityMap.get(item.market_name);
+                const existing = commodityMap.get(item.market_name)
 
                 if (existing) {
-                    existing.quantity += 1;
+                    existing.quantity += 1
                 }
                 else {
-                    const entry = { ...itemWithPrice, quantity: 1 };
-                    commodityMap.set(item.market_name, entry);
-                    result.push(entry);
+                    const entry = { ...itemWithPrice, quantity: 1 }
+                    commodityMap.set(item.market_name, entry)
+                    result.push(entry)
                 }
             } 
             else {
-                result.push({ ...itemWithPrice, quantity: 1 });
+                result.push({ ...itemWithPrice, quantity: 1 })
             }
         }
 
-        return result.sort((a, b) => b.price - a.price);
-    })();
+        return result.sort((a, b) => b.price - a.price)
+    })()
 
 
     const totalValue = stackedInventory.reduce((sum, item) => {
-        const priceState = livePrices.get(item.market_name);
+        const priceState = livePrices.get(item.market_name)
 
-        if (priceState === null) return sum;
+        if (priceState === null) return sum
 
-        return sum + item.price * item.quantity;
-    }, 0);
+        return sum + item.price * item.quantity
+    }, 0)
 
     
     return (
@@ -353,9 +353,9 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
             <LeftInventoryPanel gameFilter={gameFilter} setGameFilter={setGameFilter} />
 
             <RightPanel selling={selling} setSelling={setSelling} onListed={(ids) => {
-                setListedAssetIds(prev => new Set([...prev, ...ids]));
-                if (!hasNotificationEmail) setShowEmailPrompt(true);
-                router.refresh();
+                setListedAssetIds(prev => new Set([...prev, ...ids]))
+                if (!hasNotificationEmail) setShowEmailPrompt(true)
+                router.refresh()
             }} livePrices={livePrices} inventoryToken={inventoryToken} />
 
 
@@ -418,10 +418,10 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
                         <div className="overflow-y-auto flex-1 min-h-0 border border-gray-800 frame-shadow mt-2 p-3 rounded-sm">
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 justify-start content-start">
                                 {stackedInventory.map((item) => {
-                                    const currentAmount = selling.filter(i => i.market_name === item.market_name).length;
-                                    const remaining = item.quantity - currentAmount;
+                                    const currentAmount = selling.filter(i => i.market_name === item.market_name).length
+                                    const remaining = item.quantity - currentAmount
 
-                                    if (remaining <= 0) return;
+                                    if (remaining <= 0) return
 
                                     return (
                                         <InventoryItemCard

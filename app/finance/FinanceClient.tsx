@@ -91,7 +91,7 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
         const amount = parseFloat(amountInput)
 
         if (!amount || amount < 1) {
-            setError("Minimum deposit is $1.00");
+            setError("Minimum deposit is $1.00")
             return
         }
 
@@ -108,8 +108,8 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
         const data = await res.json()
 
         if (!res.ok) {
-            setError(data.error ?? "Failed to create payment");
-            setLoading(false);
+            setError(data.error ?? "Failed to create payment")
+            setLoading(false)
             return
         }
 
@@ -129,12 +129,12 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
         const amount = parseFloat(amountInput)
 
         if (!amount || amount < 1) {
-            setError("Minimum withdrawal is $1.00");
+            setError("Minimum withdrawal is $1.00")
             return
         }
 
         if (!address.trim()) {
-            setError("Wallet address required");
+            setError("Wallet address required")
             return
         }
 
@@ -151,8 +151,8 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
         const data = await res.json()
 
         if (!res.ok) {
-            setError(data.error ?? "Withdrawal failed");
-            setLoading(false);
+            setError(data.error ?? "Withdrawal failed")
+            setLoading(false)
             return
         }
 

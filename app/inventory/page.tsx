@@ -1,11 +1,11 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { Prisma } from "@/lib/generated/prisma/client";
-import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/db"
+import { Prisma } from "@/lib/generated/prisma/client"
+import { redirect } from "next/navigation"
 import { getInventory, checkCanTrade, SteamSticker } from '@/lib/steam'
-import { SteamItem } from "@/lib/steam";
-import { signInventoryToken } from "@/lib/inventoryToken";
+import { SteamItem } from "@/lib/steam"
+import { signInventoryToken } from "@/lib/inventoryToken"
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -13,55 +13,55 @@ export const metadata: Metadata = {
     robots: { index: false, follow: false },
 }
 
-import InventoryClient from "./InventoryClient";
-import TradeRestrictedClient from "./TradeRestrictedClient";
+import InventoryClient from "./InventoryClient"
+import TradeRestrictedClient from "./TradeRestrictedClient"
 
 //
 
 export default async function Inventory() {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.email) {
-        redirect("/");
+        redirect("/")
     }
 
 
-    const user = await prisma.user.findUnique({ where: { email: session.user!.email! } });
+    const user = await prisma.user.findUnique({ where: { email: session.user!.email! } })
 
     if (!user) {
-        redirect("/");
+        redirect("/")
     }
 
 
     if (user.steam_id) {
-        const { allowed, reason } = await checkCanTrade(user.steam_id, user.steam_trade_url);
+        const { allowed, reason } = await checkCanTrade(user.steam_id, user.steam_trade_url)
 
         if (!allowed) {
-            return <TradeRestrictedClient reason={reason} />;
+            return <TradeRestrictedClient reason={reason} />
         }
     }
 
 
-    const COOLDOWN_MS = 20 * 60 * 1000;
-    const now = new Date();
-    const cacheValid = user.lastInventoryRefresh && (now.getTime() - user.lastInventoryRefresh.getTime()) < COOLDOWN_MS;
+    const COOLDOWN_MS = 20 * 60 * 1000
+    const now = new Date()
+    const cacheValid = user.lastInventoryRefresh && (now.getTime() - user.lastInventoryRefresh.getTime()) < COOLDOWN_MS
 
-    let rawInventory: SteamItem[] = [];
+    let rawInventory: SteamItem[] = []
 
     if (user.steam_id) {
         if (cacheValid && user.inventoryCache) {
-            rawInventory = user.inventoryCache as SteamItem[];
+            rawInventory = user.inventoryCache as SteamItem[]
         } 
         else {
-            const fetched = await getInventory(user.steam_id);
+            const fetched = await getInventory(user.steam_id)
 
             if (fetched.length > 0) {
-                rawInventory = [...new Map(fetched.map(i => [i.assetId, i])).values()];
+                rawInventory = [...new Map(fetched.map(i => [i.assetId, i])).values()]
 
                 await prisma.user.update({
                     where: { id: user.id },
                     data: { lastInventoryRefresh: now, inventoryCache: rawInventory as any },
-                });
+                })
             }
         }
     }
@@ -69,14 +69,14 @@ export default async function Inventory() {
     const [listings, pendingSales] = await Promise.all([
         prisma.item_listing.findMany({ where: { userId: user.id }, select: { assetId: true } }),
         prisma.purchase.findMany({ where: { sellerId: user.id, status: 'pending' }, select: { assetId: true } }),
-    ]);
-    const listedAssetIds = new Set([...listings.map(l => l.assetId), ...pendingSales.map(p => p.assetId)]);
+    ])
+    const listedAssetIds = new Set([...listings.map(l => l.assetId), ...pendingSales.map(p => p.assetId)])
 
 
     // Cache float data from CS2 inventory items (float data comes directly from steamwebapi).
     const floatCandidates = rawInventory.filter(i =>
         i.game === 'CS2' && !i.commodity && !listedAssetIds.has(i.assetId) && i.floatValue !== null
-    );
+    )
     if (floatCandidates.length > 0) {
         // Batched into a single transaction (one round trip / one connection) instead of
         // firing N parallel upserts that exhaust the connection pool on large inventories.
@@ -86,37 +86,37 @@ export default async function Inventory() {
                 update: { floatValue: item.floatValue, paintSeed: item.paintSeed, stickers: item.stickers ?? Prisma.JsonNull, fetchedAt: new Date() },
                 create: { assetId: item.assetId, floatValue: item.floatValue, paintSeed: item.paintSeed, stickers: item.stickers ?? Prisma.JsonNull },
             })
-        ));
+        ))
     }
 
 
     // Join float data
     const floatRows = await prisma.item_float.findMany({
         where: { assetId: { in: rawInventory.map(i => i.assetId) } },
-    });
-    const floatMap = new Map(floatRows.map(f => [f.assetId, f]));
+    })
+    const floatMap = new Map(floatRows.map(f => [f.assetId, f]))
 
-    const names = rawInventory.map(i => i.market_name);
-    const prices = await prisma.item.findMany({ where: { marketName: { in: names } } });
-    const priceMap = new Map(prices.map(p => [p.marketName, p.price]));
+    const names = rawInventory.map(i => i.market_name)
+    const prices = await prisma.item.findMany({ where: { marketName: { in: names } } })
+    const priceMap = new Map(prices.map(p => [p.marketName, p.price]))
 
     const inventoryWithPrices = rawInventory.map(item => {
-        const f = floatMap.get(item.assetId);
+        const f = floatMap.get(item.assetId)
         return {
             ...item,
             price: priceMap.get(item.market_name) ?? 0,
             floatValue: f?.floatValue ?? null,
             paintSeed: f?.paintSeed ?? null,
             stickers: (f?.stickers ?? null) as SteamSticker[] | null,
-        };
-    }).filter(item => !listedAssetIds.has(item.assetId));
+        }
+    }).filter(item => !listedAssetIds.has(item.assetId))
 
 
     // Sign inventory token for ownership verification when listing
     const inventoryToken = await signInventoryToken(
         user.id,
         rawInventory.map(i => ({ assetId: i.assetId, marketName: i.market_name })),
-    );
+    )
 
     
     return <InventoryClient
@@ -125,5 +125,5 @@ export default async function Inventory() {
         inventory={inventoryWithPrices}
         lastRefresh={cacheValid ? user.lastInventoryRefresh! : now}
         inventoryToken={inventoryToken}
-    />;
+    />
 }

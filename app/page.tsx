@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     },
 }
 
-const base = getBaseUrl();
+const base = getBaseUrl()
 
 const websiteJsonLd = {
     "@context": "https://schema.org",
@@ -86,7 +86,7 @@ const websiteJsonLd = {
         "target": { "@type": "EntryPoint", "urlTemplate": `${base}/market/cs2?search={search_term_string}` },
         "query-input": "required name=search_term_string",
     },
-};
+}
 
 const organizationJsonLd = {
     "@context": "https://schema.org",
@@ -112,7 +112,7 @@ const organizationJsonLd = {
         "email": "support@skinslinger.com",
         "contactType": "customer support",
     },
-};
+}
 
 const faq = {
     "@context": "https://schema.org",
@@ -159,7 +159,7 @@ const faq = {
             "acceptedAnswer": { "@type": "Answer", "text": "We look at prices from other market places and average them out. If the item does not exist on other market places, we use prices from the Steam marketplace." },
         },
     ],
-};
+}
 
 //
 

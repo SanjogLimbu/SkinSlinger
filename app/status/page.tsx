@@ -1,15 +1,15 @@
 "use client"
 
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
 //
 
 function StatusContent() {
-    const searchParams = useSearchParams();
-    const message = searchParams.get("message");
-    const redirect = searchParams.get("redirect");
+    const searchParams = useSearchParams()
+    const message = searchParams.get("message")
+    const redirect = searchParams.get("redirect")
 
     return (
         <div className="h-full w-full flex justify-center items-center">

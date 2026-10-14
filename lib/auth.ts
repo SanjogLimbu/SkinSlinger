@@ -1,4 +1,4 @@
-import { NextAuthOptions } from "next-auth";
+import { NextAuthOptions } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "./db"
 
@@ -36,8 +36,8 @@ export const authOptions: NextAuthOptions = {
                 await prisma.user.update({
                     where: { id: token.id as string },
                     data: { steam_id: account.providerAccountId },
-                });
-                token.steam_id = account.providerAccountId;
+                })
+                token.steam_id = account.providerAccountId
             }
 
             // Fallback: if token.id was never set, look up by email
@@ -45,31 +45,31 @@ export const authOptions: NextAuthOptions = {
                 const dbUser = await prisma.user.findUnique({
                     where: { email: token.email },
                     select: { id: true, cash: true, steam_trade_url: true, steam_id: true },
-                });
+                })
                 if (dbUser) {
-                    token.id = dbUser.id;
-                    token.cash = dbUser.cash;
-                    token.steam_id = dbUser.steam_id ?? undefined;
-                    token.steam_trade_url = dbUser.steam_trade_url ?? undefined;
+                    token.id = dbUser.id
+                    token.cash = dbUser.cash
+                    token.steam_id = dbUser.steam_id ?? undefined
+                    token.steam_trade_url = dbUser.steam_trade_url ?? undefined
                 }
 
-                return token;
+                return token
             }
 
             if (token.id) {
                 const dbUser = await prisma.user.findUnique({
                     where: { id: token.id as string },
                     select: { cash: true, steam_trade_url: true, steam_id: true },
-                });
+                })
 
                 if (dbUser) {
-                    token.cash = dbUser.cash;
-                    token.steam_id = dbUser.steam_id ?? undefined;
-                    token.steam_trade_url = dbUser.steam_trade_url ?? undefined;
+                    token.cash = dbUser.cash
+                    token.steam_id = dbUser.steam_id ?? undefined
+                    token.steam_trade_url = dbUser.steam_trade_url ?? undefined
                 }
             }
 
-            return token;
+            return token
         },
 
         async session({ session, token }) {
@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.cash = token.cash
             }
 
-            return session;
+            return session
         }
     },
 

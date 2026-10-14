@@ -1,14 +1,14 @@
 "use client"
 
-import { SteamItem } from '@/lib/steam';
-import { maxListingPrice, minListingPrice } from '@/lib/pricing';
-import { useState, useEffect, useRef } from 'react';
-import SellItemCard from './SellItemCard';
-import { Prompt } from '@/app/components/Prompt';
+import { SteamItem } from '@/lib/steam'
+import { maxListingPrice, minListingPrice } from '@/lib/pricing'
+import { useState, useEffect, useRef } from 'react'
+import SellItemCard from './SellItemCard'
+import { Prompt } from '@/app/components/Prompt'
 
 //
 
-const discounts = [0, 5, 15, 20];
+const discounts = [0, 5, 15, 20]
 
 //
 
@@ -84,21 +84,21 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
     livePrices: Map<string, number | null>,
     inventoryToken: string,
 }) {
-    const [showPrompt, setShowPrompt] = useState(false);
-    const [listError, setListError] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-    const [mobileQueueOpen, setMobileQueueOpen] = useState(false);
-    const [priceMap, setPriceMap] = useState<Record<string, string>>({});
-    const [bidMap, setBidMap] = useState<Record<string, number | null>>({});
-    const fetchedRef = useRef<Set<string>>(new Set());
+    const [showPrompt, setShowPrompt] = useState(false)
+    const [listError, setListError] = useState("")
+    const [submitting, setSubmitting] = useState(false)
+    const [mobileQueueOpen, setMobileQueueOpen] = useState(false)
+    const [priceMap, setPriceMap] = useState<Record<string, string>>({})
+    const [bidMap, setBidMap] = useState<Record<string, number | null>>({})
+    const fetchedRef = useRef<Set<string>>(new Set())
 
     function applyInstantSell() {
-        const next: Record<string, string> = { ...priceMap };
+        const next: Record<string, string> = { ...priceMap }
         for (const item of stackedQueue) {
-            const bid = bidMap[item.market_name];
-            if (bid) next[item.market_name] = bid.toFixed(2);
+            const bid = bidMap[item.market_name]
+            if (bid) next[item.market_name] = bid.toFixed(2)
         }
-        setPriceMap(next);
+        setPriceMap(next)
     }
 
     async function listItems() {
@@ -113,18 +113,18 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
             quantity: item.quantity,
             icon: item.icon,
             hexColor: item.hexColor,
-        }));
+        }))
 
         // The server rejects the whole batch on any invalid price — catch it here
         // so the user sees why instead of a silent no-op.
         if (items.some(i => !Number.isFinite(i.price) || i.price <= 0)) {
-            setListError("Every item needs a price above $0.00.");
-            return;
+            setListError("Every item needs a price above $0.00.")
+            return
         }
 
-        const ids = selling.map(i => i.assetId);
-        setListError("");
-        setSubmitting(true);
+        const ids = selling.map(i => i.assetId)
+        setListError("")
+        setSubmitting(true)
 
         // Wait for the listing to be persisted before refreshing. The optimistic hide
         // only knows each stack's representative assetId, but the server lists every
@@ -135,99 +135,99 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ items, inventoryToken }),
-            });
+            })
 
             if (!response.ok) {
-                const data = await response.json().catch(() => null);
-                setListError(data?.error ?? "Listing failed — please try again.");
-                return;
+                const data = await response.json().catch(() => null)
+                setListError(data?.error ?? "Listing failed — please try again.")
+                return
             }
         } catch {
-            setListError("Network error — please try again.");
-            return;
+            setListError("Network error — please try again.")
+            return
         } finally {
-            setSubmitting(false);
+            setSubmitting(false)
         }
 
-        setSelling([]);
-        setShowPrompt(false);
-        onListed(ids);
+        setSelling([])
+        setShowPrompt(false)
+        onListed(ids)
     }
 
     function remove(market_name: string) {
-        const index = selling.findIndex(x => x.market_name === market_name);
+        const index = selling.findIndex(x => x.market_name === market_name)
 
         if (index >= 0) {
-            setSelling(selling.filter((_, i) => i !== index));
-            fetchedRef.current.delete(market_name);
+            setSelling(selling.filter((_, i) => i !== index))
+            fetchedRef.current.delete(market_name)
         }
     }
 
     
     const stackedQueue = (() => {
-        const result: (SteamItem & { quantity: number })[] = [];
-        const commodityMap = new Map<string, SteamItem & { quantity: number }>();
+        const result: (SteamItem & { quantity: number })[] = []
+        const commodityMap = new Map<string, SteamItem & { quantity: number }>()
 
         for (const item of selling) {
             if (item.commodity) {
-                const existing = commodityMap.get(item.market_name);
+                const existing = commodityMap.get(item.market_name)
                 if (existing) {
-                    existing.quantity += 1;
+                    existing.quantity += 1
                 } else {
-                    const entry = { ...item, quantity: 1 };
-                    commodityMap.set(item.market_name, entry);
-                    result.push(entry);
+                    const entry = { ...item, quantity: 1 }
+                    commodityMap.set(item.market_name, entry)
+                    result.push(entry)
                 }
             } else {
-                result.push({ ...item, quantity: 1 });
+                result.push({ ...item, quantity: 1 })
             }
         }
 
-        return result;
-    })();
+        return result
+    })()
     // Auto-fetch buy order prices for new queue items
     useEffect(() => {
         for (const item of stackedQueue) {
-            if (fetchedRef.current.has(item.market_name)) continue;
-            fetchedRef.current.add(item.market_name);
+            if (fetchedRef.current.has(item.market_name)) continue
+            fetchedRef.current.add(item.market_name)
             fetch(`/api/market/orders?marketName=${encodeURIComponent(item.market_name)}`)
                 .then(r => r.json())
                 .then(data => {
-                    const highestBid: number | null = data.buyOrders?.[0]?.price ?? null;
-                    setBidMap(prev => ({ ...prev, [item.market_name]: highestBid }));
+                    const highestBid: number | null = data.buyOrders?.[0]?.price ?? null
+                    setBidMap(prev => ({ ...prev, [item.market_name]: highestBid }))
                     if (highestBid) {
                         setPriceMap(prev => {
-                            if (prev[item.market_name] !== undefined) return prev;
-                            return { ...prev, [item.market_name]: highestBid.toFixed(2) };
-                        });
+                            if (prev[item.market_name] !== undefined) return prev
+                            return { ...prev, [item.market_name]: highestBid.toFixed(2) }
+                        })
                     }
-                });
+                })
         }
-    }, [stackedQueue]);
+    }, [stackedQueue])
 
     // Highest price the server accepts for an item, or null when it has no market price yet
     function maxPrice(item: SteamItem): number | null {
-        const priceOf = (name: string) => livePrices.get(name) ?? 0;
+        const priceOf = (name: string) => livePrices.get(name) ?? 0
 
-        return maxListingPrice(priceOf(item.market_name), item.stickers, priceOf);
+        return maxListingPrice(priceOf(item.market_name), item.stickers, priceOf)
     }
 
     // Lowest price the server accepts for an item, or null when it has no market price yet
     function minPrice(item: SteamItem): number | null {
-        return minListingPrice(livePrices.get(item.market_name) ?? 0);
+        return minListingPrice(livePrices.get(item.market_name) ?? 0)
     }
 
     function defaultPrice(item: SteamItem & { quantity: number }): string {
-        const livePrice = parseFloat((livePrices.get(item.market_name) ?? item.price).toFixed(2));
-        return livePrice.toFixed(2);
+        const livePrice = parseFloat((livePrices.get(item.market_name) ?? item.price).toFixed(2))
+        return livePrice.toFixed(2)
     }
 
     const totalValue = stackedQueue.reduce((sum, item) => {
-        const price = parseFloat(priceMap[item.market_name] ?? defaultPrice(item));
-        return sum + (isNaN(price) ? 0 : price) * item.quantity;
-    }, 0);
+        const price = parseFloat(priceMap[item.market_name] ?? defaultPrice(item))
+        return sum + (isNaN(price) ? 0 : price) * item.quantity
+    }, 0)
 
-    const totalItems = stackedQueue.reduce((sum, item) => sum + item.quantity, 0);
+    const totalItems = stackedQueue.reduce((sum, item) => sum + item.quantity, 0)
 
 
     // Shared by the mobile queue modal and the desktop sidebar
@@ -237,15 +237,15 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
                 <button
                     key={d}
                     onClick={() => {
-                        const next: Record<string, string> = {};
+                        const next: Record<string, string> = {}
 
                         for (const item of stackedQueue) {
-                            const base = parseFloat((livePrices.get(item.market_name) ?? item.price).toFixed(2));
-                            next[item.market_name] = (base * (1 - d / 100)).toFixed(2);
+                            const base = parseFloat((livePrices.get(item.market_name) ?? item.price).toFixed(2))
+                            next[item.market_name] = (base * (1 - d / 100)).toFixed(2)
                         }
 
 
-                        setPriceMap(next);
+                        setPriceMap(next)
                     }}
                     className="flex-1 h-7 rounded-sm text-xs cursor-pointer bg-primary opacity-60 hover:opacity-100 transition-colors"
                 >
@@ -255,9 +255,9 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
 
             {stackedQueue.every(item => bidMap[item.market_name]) && (() => {
                 const allMatch = stackedQueue.every(item => {
-                    const bid = bidMap[item.market_name];
-                    return bid && priceMap[item.market_name] === bid.toFixed(2);
-                });
+                    const bid = bidMap[item.market_name]
+                    return bid && priceMap[item.market_name] === bid.toFixed(2)
+                })
 
 
                 return (
@@ -267,10 +267,10 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
                     >
                         Instant
                     </button>
-                );
+                )
             })()}
         </div>
-    );
+    )
 
     const queueCards = stackedQueue.map((item) => (
         <SellItemCard
@@ -287,7 +287,7 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
             bidPrice={bidMap[item.market_name] ?? null}
             remove={() => remove(item.market_name)}
         />
-    ));
+    ))
 
 
     return (

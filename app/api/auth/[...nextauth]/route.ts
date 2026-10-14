@@ -13,7 +13,7 @@ async function auth(
     }>
   }
 ) {
-  const params = await ctx.params;
+  const params = await ctx.params
 
   const steam = Steam(req, {
     clientSecret: process.env.STEAM_SECRET!

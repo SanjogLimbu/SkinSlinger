@@ -1,44 +1,44 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import FloatBar from "@/app/components/FloatBar";
-import { Prompt } from "@/app/components/Prompt";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Image from "next/image"
+import FloatBar from "@/app/components/FloatBar"
+import { Prompt } from "@/app/components/Prompt"
 
 //
 
 type Listing = {
-    id: string;
-    assetId: string;
-    marketName: string;
-    price: number;
-    game: string | null;
-    icon: string | null;
-    hexColor: string | null;
-    commodity: boolean;
-    floatValue: number | null;
-    paintSeed: number | null;
-};
+    id: string
+    assetId: string
+    marketName: string
+    price: number
+    game: string | null
+    icon: string | null
+    hexColor: string | null
+    commodity: boolean
+    floatValue: number | null
+    paintSeed: number | null
+}
 
 type ListingGroup = {
-    ids: string[];
-    marketName: string;
-    price: number;
-    icon: string | null;
-    hexColor: string | null;
-    commodity: boolean;
-    floatValue: number | null;
-    paintSeed: number | null;
-};
+    ids: string[]
+    marketName: string
+    price: number
+    icon: string | null
+    hexColor: string | null
+    commodity: boolean
+    floatValue: number | null
+    paintSeed: number | null
+}
 
 function groupListings(listings: Listing[]): ListingGroup[] {
-    const map = new Map<string, ListingGroup>();
+    const map = new Map<string, ListingGroup>()
     for (const l of listings) {
-        const key = l.commodity ? l.marketName : l.id;
-        const existing = map.get(key);
+        const key = l.commodity ? l.marketName : l.id
+        const existing = map.get(key)
         if (existing) {
-            existing.ids.push(l.id);
+            existing.ids.push(l.id)
         } else {
             map.set(key, {
                 ids: [l.id],
@@ -49,55 +49,55 @@ function groupListings(listings: Listing[]): ListingGroup[] {
                 commodity: l.commodity,
                 floatValue: l.floatValue,
                 paintSeed: l.paintSeed,
-            });
+            })
         }
     }
-    return [...map.values()];
+    return [...map.values()]
 }
 
 //
 
 function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () => void }) {
-    const router = useRouter();
-    const [priceStr, setPriceStr] = useState(group.price.toFixed(2));
-    const [basePrice, setBasePrice] = useState(group.price);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState("");
+    const router = useRouter()
+    const [priceStr, setPriceStr] = useState(group.price.toFixed(2))
+    const [basePrice, setBasePrice] = useState(group.price)
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState("")
 
-    const parsedPrice = parseFloat(priceStr);
-    const isDirty = !isNaN(parsedPrice) && parsedPrice > 0 && parsedPrice !== basePrice;
-    const totalPrice = (isNaN(parsedPrice) ? group.price : parsedPrice) * group.ids.length;
+    const parsedPrice = parseFloat(priceStr)
+    const isDirty = !isNaN(parsedPrice) && parsedPrice > 0 && parsedPrice !== basePrice
+    const totalPrice = (isNaN(parsedPrice) ? group.price : parsedPrice) * group.ids.length
 
     async function savePrice() {
-        setSaving(true);
-        setBasePrice(parsedPrice);
-        setError("");
+        setSaving(true)
+        setBasePrice(parsedPrice)
+        setError("")
 
         for (const id of group.ids) {
             const res = await fetch(`/api/listings/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ price: parsedPrice }),
-            });
+            })
 
 
             if (!res.ok) {
-                const data = await res.json();
+                const data = await res.json()
 
-                setError(data.error ?? "Failed to update price");
-                setSaving(false);
+                setError(data.error ?? "Failed to update price")
+                setSaving(false)
 
-                return;
+                return
             }
         }
-        router.refresh();
-        setSaving(false);
+        router.refresh()
+        setSaving(false)
     }
 
     function delist() {
-        onDelist();
+        onDelist()
         for (const id of group.ids) {
-            fetch(`/api/listings/${id}`, { method: "DELETE" });
+            fetch(`/api/listings/${id}`, { method: "DELETE" })
         }
     }
 
@@ -179,28 +179,28 @@ function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () =>
                 DELIST
             </button>
         </div>
-    );
+    )
 }
 
 //
 
 export default function ListingsClient({ listings }: { listings: Listing[] }) {
-    const [groups, setGroups] = useState(() => groupListings(listings));
-    const [confirmDelistAll, setConfirmDelistAll] = useState(false);
+    const [groups, setGroups] = useState(() => groupListings(listings))
+    const [confirmDelistAll, setConfirmDelistAll] = useState(false)
 
     function removeGroup(id: string) {
-        setGroups(prev => prev.filter(g => g.ids[0] !== id));
+        setGroups(prev => prev.filter(g => g.ids[0] !== id))
     }
 
     function delistAll() {
-        const allIds = groups.flatMap(g => g.ids);
-        setGroups([]);
-        setConfirmDelistAll(false);
+        const allIds = groups.flatMap(g => g.ids)
+        setGroups([])
+        setConfirmDelistAll(false)
         fetch("/api/listings", {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ids: allIds }),
-        });
+        })
     }
 
     return (
@@ -236,5 +236,5 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
                 )}
             </div>
         </div>
-    );
+    )
 }

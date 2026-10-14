@@ -1,25 +1,25 @@
-import * as React from 'react';
+import * as React from 'react'
 
 //
 
 interface Props {
-    role: 'buyer' | 'seller';
-    items: { marketName: string; price: number }[];
+    role: 'buyer' | 'seller'
+    items: { marketName: string; price: number }[]
 }
 
 //
 
 export function TradeCompleteEmail({ role, items }: Props) {
-    const total = items.reduce((sum, item) => sum + item.price, 0);
-    const many = items.length > 1;
+    const total = items.reduce((sum, item) => sum + item.price, 0)
+    const many = items.length > 1
 
     const heading = role === 'buyer'
         ? `Item${many ? 's' : ''} received`
-        : 'Funds released to your balance';
+        : 'Funds released to your balance'
 
     const body = role === 'buyer'
         ? `We've confirmed the following item${many ? 's' : ''} arrived in your Steam inventory. The trade is complete.`
-        : `Your sale${many ? 's are' : ' is'} complete — the held balance below is now available in your SkinSlinger account.`;
+        : `Your sale${many ? 's are' : ' is'} complete — the held balance below is now available in your SkinSlinger account.`
 
     return (
         <div style={{ backgroundColor: '#1f1f1f', padding: '40px 0', fontFamily: 'Arial, sans-serif' }}>
@@ -56,5 +56,5 @@ export function TradeCompleteEmail({ role, items }: Props) {
                 </div>
             </div>
         </div>
-    );
+    )
 }

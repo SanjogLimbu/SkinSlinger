@@ -1,63 +1,63 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import { useEmailVerification } from "@/app/components/useEmailVerification";
-import { Prompt } from "@/app/components/Prompt";
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Image from "next/image"
+import Link from "next/link"
+import { useEmailVerification } from "@/app/components/useEmailVerification"
+import { Prompt } from "@/app/components/Prompt"
 
 //
 
 type Purchase = {
-    id: string;
-    createdAt: Date;
-    deliveredAt: Date | null;
-    tradeOfferSentAt: Date | null;
-    status: string;
-    price: number;
-    marketName: string;
-    icon: string | null;
-    hexColor: string | null;
-    commodity: boolean;
-    buyerTradeUrl: string | null;
-    buyerId: string;
-    sellerId: string;
-    buyerName: string | null;
-    sellerName: string | null;
-    buyerImage: string | null;
-    sellerImage: string | null;
-};
+    id: string
+    createdAt: Date
+    deliveredAt: Date | null
+    tradeOfferSentAt: Date | null
+    status: string
+    price: number
+    marketName: string
+    icon: string | null
+    hexColor: string | null
+    commodity: boolean
+    buyerTradeUrl: string | null
+    buyerId: string
+    sellerId: string
+    buyerName: string | null
+    sellerName: string | null
+    buyerImage: string | null
+    sellerImage: string | null
+}
 
 type PurchaseGroup = {
-    ids: string[];
-    createdAt: Date;
-    deliveredAt: Date | null;
-    tradeOfferSentAt: Date | null;
-    marketName: string;
-    icon: string | null;
-    hexColor: string | null;
-    commodity: boolean;
-    totalPrice: number;
-    status: string;
-    buyerTradeUrl: string | null;
-    buyerId: string;
-    sellerId: string;
-    buyerName: string | null;
-    sellerName: string | null;
-    buyerImage: string | null;
-    sellerImage: string | null;
-};
+    ids: string[]
+    createdAt: Date
+    deliveredAt: Date | null
+    tradeOfferSentAt: Date | null
+    marketName: string
+    icon: string | null
+    hexColor: string | null
+    commodity: boolean
+    totalPrice: number
+    status: string
+    buyerTradeUrl: string | null
+    buyerId: string
+    sellerId: string
+    buyerName: string | null
+    sellerName: string | null
+    buyerImage: string | null
+    sellerImage: string | null
+}
 
 function groupPurchases(purchases: Purchase[]): PurchaseGroup[] {
-    const map = new Map<string, PurchaseGroup>();
+    const map = new Map<string, PurchaseGroup>()
     for (const p of purchases) {
-        const key = p.commodity ? `${p.marketName}|${p.status}|${p.buyerId}|${p.sellerId}` : p.id;
-        const existing = map.get(key);
+        const key = p.commodity ? `${p.marketName}|${p.status}|${p.buyerId}|${p.sellerId}` : p.id
+        const existing = map.get(key)
         if (existing) {
-            existing.ids.push(p.id);
-            existing.totalPrice += p.price;
-            existing.tradeOfferSentAt = existing.tradeOfferSentAt ?? p.tradeOfferSentAt;
+            existing.ids.push(p.id)
+            existing.totalPrice += p.price
+            existing.tradeOfferSentAt = existing.tradeOfferSentAt ?? p.tradeOfferSentAt
         } else {
             map.set(key, {
                 ids: [p.id],
@@ -77,10 +77,10 @@ function groupPurchases(purchases: Purchase[]): PurchaseGroup[] {
                 sellerName: p.sellerName,
                 buyerImage: p.buyerImage,
                 sellerImage: p.sellerImage,
-            });
+            })
         }
     }
-    return [...map.values()];
+    return [...map.values()]
 }
 
 //
@@ -91,17 +91,17 @@ const STATUS_CHIP: Record<string, { label: string; className: string }> = {
     completed: { label: "Completed",   className: "bg-special/10 text-special" },
     reversed:  { label: "Reversed",    className: "bg-red-400/10 text-red-400" },
     cancelled: { label: "Cancelled",   className: "bg-white/5 text-gray-400" },
-};
+}
 
 function statusChip(status: string) {
-    return STATUS_CHIP[status] ?? { label: status, className: "bg-white/5 text-gray-400" };
+    return STATUS_CHIP[status] ?? { label: status, className: "bg-white/5 text-gray-400" }
 }
 
 function formatDate(d: Date) {
-    return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
 }
 
-const HOLD_MS = 8 * 24 * 60 * 60 * 1000;
+const HOLD_MS = 8 * 24 * 60 * 60 * 1000
 
 //
 
@@ -143,94 +143,94 @@ function CancelModal({ refundMessage, tradeOfferSent, onConfirm, onClose, loadin
 
 
 function useCancel(ids: string[]) {
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const router = useRouter()
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
 
     async function cancel() {
-        setLoading(true);
-        setError("");
+        setLoading(true)
+        setError("")
 
         for (const id of ids) {
-            const res = await fetch(`/api/purchase/${id}/cancel`, { method: "POST" });
+            const res = await fetch(`/api/purchase/${id}/cancel`, { method: "POST" })
 
             if (!res.ok) {
-                const data = await res.json();
-                setError(data.error ?? "Something went wrong");
-                setLoading(false);
+                const data = await res.json()
+                setError(data.error ?? "Something went wrong")
+                setLoading(false)
 
-                return false;
+                return false
             }
         }
 
 
-        router.refresh();
-        setLoading(false);
-        return true;
+        router.refresh()
+        setLoading(false)
+        return true
     }
 
 
-    return { cancel, loading, error };
+    return { cancel, loading, error }
 }
 
 
 // Keep in sync with AUTO_CANCEL_MS in app/api/cron/process-purchases.
-const AUTO_CANCEL_MS = 3 * 24 * 60 * 60 * 1000;
+const AUTO_CANCEL_MS = 3 * 24 * 60 * 60 * 1000
 
 // Counts down to when the cron auto-cancels an order whose trade offer was never sent.
 function ExpiryTimer({ createdAt }: { createdAt: Date }) {
-    const [msLeft, setMsLeft] = useState<number | null>(null);
+    const [msLeft, setMsLeft] = useState<number | null>(null)
 
     useEffect(() => {
-        const expiresAt = new Date(createdAt).getTime() + AUTO_CANCEL_MS;
-        const calc = () => setMsLeft(expiresAt - Date.now());
+        const expiresAt = new Date(createdAt).getTime() + AUTO_CANCEL_MS
+        const calc = () => setMsLeft(expiresAt - Date.now())
 
-        calc();
-        const id = setInterval(calc, 1000);
+        calc()
+        const id = setInterval(calc, 1000)
 
-        return () => clearInterval(id);
-    }, [createdAt]);
+        return () => clearInterval(id)
+    }, [createdAt])
 
     if (msLeft === null) {
-        return <span className="font-mono text-gray-300">...</span>;
+        return <span className="font-mono text-gray-300">...</span>
     }
 
     if (msLeft <= 0) {
-        return <span className="font-mono text-gray-300">any moment now</span>;
+        return <span className="font-mono text-gray-300">any moment now</span>
     }
 
-    const d = Math.floor(msLeft / 86400000);
-    const h = Math.floor(msLeft / 3600000) % 24;
-    const m = Math.floor(msLeft / 60000) % 60;
-    const s = Math.floor(msLeft / 1000) % 60;
+    const d = Math.floor(msLeft / 86400000)
+    const h = Math.floor(msLeft / 3600000) % 24
+    const m = Math.floor(msLeft / 60000) % 60
+    const s = Math.floor(msLeft / 1000) % 60
 
     return (
         <span className="font-mono text-gray-300">
             {d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s.toString().padStart(2, "0")}s`}
         </span>
-    );
+    )
 }
 
 //
 
 function Avatar({ image, name }: { image: string | null; name: string }) {
     if (image) {
-        return <Image src={image} alt={name} width={36} height={36} className="rounded-[4px] shrink-0" />;
+        return <Image src={image} alt={name} width={36} height={36} className="rounded-[4px] shrink-0" />
     }
 
     return (
         <span className="w-9 h-9 rounded-[4px] bg-accent flex items-center justify-center text-sm font-semibold shrink-0">
             {name.charAt(0).toUpperCase()}
         </span>
-    );
+    )
 }
 
 function StageTracker({ stages, currentStep, extra }: { stages: string[]; currentStep: number; extra?: Partial<Record<number, React.ReactNode>> }) {
     return (
         <ol className="flex flex-col gap-0">
             {stages.map((stage, i) => {
-                const done = i < currentStep;
-                const active = i === currentStep;
+                const done = i < currentStep
+                const active = i === currentStep
                 return (
                     <li key={i} className="flex gap-3">
                         <div className="flex flex-col items-center">
@@ -253,38 +253,38 @@ function StageTracker({ stages, currentStep, extra }: { stages: string[]; curren
                             {extra?.[i]}
                         </div>
                     </li>
-                );
+                )
             })}
         </ol>
-    );
+    )
 }
 
 function HoldProgress({ deliveredAt }: { deliveredAt: Date }) {
-    const [now, setNow] = useState(() => Date.now());
+    const [now, setNow] = useState(() => Date.now())
 
     useEffect(() => {
-        const id = setInterval(() => setNow(Date.now()), 30000);
-        return () => clearInterval(id);
-    }, []);
+        const id = setInterval(() => setNow(Date.now()), 30000)
+        return () => clearInterval(id)
+    }, [])
 
-    const elapsed = now - new Date(deliveredAt).getTime();
-    const pct = Math.min(100, Math.max(0, (elapsed / HOLD_MS) * 100));
+    const elapsed = now - new Date(deliveredAt).getTime()
+    const pct = Math.min(100, Math.max(0, (elapsed / HOLD_MS) * 100))
 
     return (
         <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden mt-1.5">
             <div className="h-full bg-special transition-[width] duration-1000" style={{ width: `${pct}%` }} />
         </div>
-    );
+    )
 }
 
 
 function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" | "seller" }) {
-    const [confirming, setConfirming] = useState(false);
-    const [showHoldInfo, setShowHoldInfo] = useState(false);
-    const { cancel, loading, error } = useCancel(group.ids);
+    const [confirming, setConfirming] = useState(false)
+    const [showHoldInfo, setShowHoldInfo] = useState(false)
+    const { cancel, loading, error } = useCancel(group.ids)
 
-    const counterpartyName = role === "buyer" ? (group.sellerName ?? "Seller") : (group.buyerName ?? "Buyer");
-    const counterpartyImage = role === "buyer" ? group.sellerImage : group.buyerImage;
+    const counterpartyName = role === "buyer" ? (group.sellerName ?? "Seller") : (group.buyerName ?? "Buyer")
+    const counterpartyImage = role === "buyer" ? group.sellerImage : group.buyerImage
 
     const stages = role === "buyer"
         ? [
@@ -300,17 +300,17 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
             `Wait for ${counterpartyName} to accept the offer`,
             "Waiting out the 8-day clearing hold",
             "Complete",
-        ];
+        ]
 
 
     // "pending" is awaiting the trade; "holding" means delivered and clearing (waiting out the 8-day window).
-    const isHolding = group.status === "holding";
-    const currentStep = isHolding ? 3 : group.tradeOfferSentAt ? 2 : 1;
+    const isHolding = group.status === "holding"
+    const currentStep = isHolding ? 3 : group.tradeOfferSentAt ? 2 : 1
     const releaseText = group.deliveredAt
         ? formatDate(new Date(new Date(group.deliveredAt).getTime() + HOLD_MS))
-        : "soon";
+        : "soon"
 
-    const holdStageIndex = stages.length - 2;
+    const holdStageIndex = stages.length - 2
     const stageExtra = {
         [holdStageIndex]: (
             <div className="flex flex-col gap-1.5">
@@ -332,7 +332,7 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
                 {isHolding && group.deliveredAt && <HoldProgress deliveredAt={group.deliveredAt} />}
             </div>
         ),
-    };
+    }
 
     return (
         <div className="bg-secondary rounded-sm p-5 flex flex-col gap-3" style={group.hexColor ? { boxShadow: `0 0 32px #${group.hexColor}1a` } : undefined}>
@@ -463,13 +463,13 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
                 />
             )}
         </div>
-    );
+    )
 }
 
 
 function HistoryRow({ group, role }: { group: PurchaseGroup; role: "buyer" | "seller" }) {
-    const counterpartyName = role === "buyer" ? (group.sellerName ?? "Seller") : (group.buyerName ?? "Buyer");
-    const chip = statusChip(group.status);
+    const counterpartyName = role === "buyer" ? (group.sellerName ?? "Seller") : (group.buyerName ?? "Buyer")
+    const chip = statusChip(group.status)
 
     return (
         <div className="bg-accent rounded-sm px-4 py-3 flex items-center justify-between gap-3">
@@ -507,26 +507,26 @@ function HistoryRow({ group, role }: { group: PurchaseGroup; role: "buyer" | "se
                 </span>
             </div>
         </div>
-    );
+    )
 }
 
 //
 
 function maskEmail(email: string) {
-    const [local, domain] = email.split("@");
-    if (!domain) return "*".repeat(email.length);
-    const maskedLocal = local.length <= 1 ? "*" : local[0] + "*".repeat(local.length - 1);
-    return `${maskedLocal}@${domain}`;
+    const [local, domain] = email.split("@")
+    if (!domain) return "*".repeat(email.length)
+    const maskedLocal = local.length <= 1 ? "*" : local[0] + "*".repeat(local.length - 1)
+    return `${maskedLocal}@${domain}`
 }
 
 function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificationEmail: string | null; pendingEmail: string | null }) {
-    const [confirmedEmail, setConfirmedEmail] = useState(notificationEmail ?? "");
-    const [revealed, setRevealed] = useState(false);
+    const [confirmedEmail, setConfirmedEmail] = useState(notificationEmail ?? "")
+    const [revealed, setRevealed] = useState(false)
     const { step, setStep, email, setEmail, code, setCode, loading, error, setError, sendCode, confirm } = useEmailVerification(
         notificationEmail ? "done" : pendingEmail ? "code" : "idle",
         notificationEmail ?? pendingEmail ?? "",
         setConfirmedEmail,
-    );
+    )
 
     return (
         <section className="bg-secondary rounded-sm p-5 flex flex-col gap-3">
@@ -606,50 +606,50 @@ function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificati
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
         </section>
-    );
+    )
 }
 
 //
 
-const EXTENSION_ID = "mdnnnglffnidgnhkmffegicnohmbnedk";
-const EXTENSION_STORE_URL = `https://chromewebstore.google.com/detail/skinslinger-trade-helper/${EXTENSION_ID}`;
+const EXTENSION_ID = "mdnnnglffnidgnhkmffegicnohmbnedk"
+const EXTENSION_STORE_URL = `https://chromewebstore.google.com/detail/skinslinger-trade-helper/${EXTENSION_ID}`
 
 // Detects the SkinSlinger Trade Helper via Chrome's externally_connectable
 // messaging. null while checking, false when missing (or not a Chromium browser).
 function useExtensionInstalled() {
-    const [installed, setInstalled] = useState<boolean | null>(null);
+    const [installed, setInstalled] = useState<boolean | null>(null)
 
     useEffect(() => {
         type ChromeRuntime = {
-            sendMessage: (id: string, msg: unknown, cb: (res?: { ok?: boolean }) => void) => void;
-            lastError?: unknown;
-        };
-        const runtime = (window as unknown as { chrome?: { runtime?: ChromeRuntime } }).chrome?.runtime;
+            sendMessage: (id: string, msg: unknown, cb: (res?: { ok?: boolean }) => void) => void
+            lastError?: unknown
+        }
+        const runtime = (window as unknown as { chrome?: { runtime?: ChromeRuntime } }).chrome?.runtime
 
         if (!runtime?.sendMessage) {
-            setInstalled(false);
-            return;
+            setInstalled(false)
+            return
         }
 
-        const timeout = setTimeout(() => setInstalled(false), 2000);
+        const timeout = setTimeout(() => setInstalled(false), 2000)
 
         try {
             runtime.sendMessage(EXTENSION_ID, { type: "PING" }, (response) => {
-                clearTimeout(timeout);
+                clearTimeout(timeout)
                 // Reading lastError stops Chrome logging an unchecked-error warning
                 // when the extension isn't installed.
-                void runtime.lastError;
-                setInstalled(!!response?.ok);
-            });
+                void runtime.lastError
+                setInstalled(!!response?.ok)
+            })
         } catch {
-            clearTimeout(timeout);
-            setInstalled(false);
+            clearTimeout(timeout)
+            setInstalled(false)
         }
 
-        return () => clearTimeout(timeout);
-    }, []);
+        return () => clearTimeout(timeout)
+    }, [])
 
-    return installed;
+    return installed
 }
 
 function ExtensionPromptCard() {
@@ -673,26 +673,26 @@ function ExtensionPromptCard() {
                 Install from the Chrome Web Store
             </a>
         </section>
-    );
+    )
 }
 
 export default function OrdersClient({ purchases, currentUserId, notificationEmail, pendingEmail }: { purchases: Purchase[]; currentUserId: string; notificationEmail: string | null; pendingEmail: string | null }) {
-    const groups = groupPurchases(purchases);
+    const groups = groupPurchases(purchases)
 
     const withRole = groups.map(g => ({
         group: g,
         role: (g.buyerId === currentUserId ? "buyer" : "seller") as "buyer" | "seller",
-    }));
+    }))
 
 
-    const active = withRole.filter(({ group }) => group.status === "pending");
-    const clearing = withRole.filter(({ group }) => group.status === "holding");
-    const history = withRole.filter(({ group }) => group.status !== "pending" && group.status !== "holding");
+    const active = withRole.filter(({ group }) => group.status === "pending")
+    const clearing = withRole.filter(({ group }) => group.status === "holding")
+    const history = withRole.filter(({ group }) => group.status !== "pending" && group.status !== "holding")
 
     // Only sellers need the extension (it runs in the seller's Steam session), so
     // buyers are never prompted to install it.
-    const extensionInstalled = useExtensionInstalled();
-    const isSellingActively = active.some(({ role }) => role === "seller");
+    const extensionInstalled = useExtensionInstalled()
+    const isSellingActively = active.some(({ role }) => role === "seller")
 
     return (
         <div className="w-full flex-1 min-h-0 flex justify-center pt-40 px-4 md:px-8 overflow-y-auto pb-10">
@@ -767,6 +767,6 @@ export default function OrdersClient({ purchases, currentUserId, notificationEma
                 )}
             </div>
         </div>
-    );
+    )
 }
 

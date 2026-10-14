@@ -1,16 +1,16 @@
-import * as React from 'react';
+import * as React from 'react'
 
 //
 
 interface Props {
-    items: { marketName: string; price: number }[];
+    items: { marketName: string; price: number }[]
 }
 
 //
 
 export function ReversalRefundEmail({ items }: Props) {
-    const total = items.reduce((sum, item) => sum + item.price, 0);
-    const many = items.length > 1;
+    const total = items.reduce((sum, item) => sum + item.price, 0)
+    const many = items.length > 1
 
     return (
         <div style={{ backgroundColor: '#1f1f1f', padding: '40px 0', fontFamily: 'Arial, sans-serif' }}>
@@ -47,5 +47,5 @@ export function ReversalRefundEmail({ items }: Props) {
                 </div>
             </div>
         </div>
-    );
+    )
 }

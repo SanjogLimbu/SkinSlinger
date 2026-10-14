@@ -1,9 +1,9 @@
-import * as React from 'react';
+import * as React from 'react'
 
 //
 
 interface Props {
-    code: string;
+    code: string
 }
 
 //
@@ -41,5 +41,5 @@ export function EmailVerificationEmail({ code }: Props) {
                 </div>
             </div>
         </div>
-    );
+    )
 }

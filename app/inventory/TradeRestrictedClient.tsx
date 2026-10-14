@@ -1,18 +1,18 @@
-"use client";
+"use client"
 
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { useTradeUrlForm } from '@/app/components/SteamUrlPrompt';
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import { useTradeUrlForm } from '@/app/components/SteamUrlPrompt'
 
 export default function TradeRestrictedClient({ reason }: { reason: string | null }) {
-    const router = useRouter();
-    const { url, error: urlError, waiting, checkUrl, onSubmit } = useTradeUrlForm(() => router.refresh());
+    const router = useRouter()
+    const { url, error: urlError, waiting, checkUrl, onSubmit } = useTradeUrlForm(() => router.refresh())
 
-    const isCorruptUrl = reason === "corrupt_url";
+    const isCorruptUrl = reason === "corrupt_url"
 
     const displayReason = isCorruptUrl
         ? "Your saved trade URL is malformed. Please enter a valid one to continue."
-        : (reason ?? "Your Steam account cannot trade at this time.");
+        : (reason ?? "Your Steam account cannot trade at this time.")
 
     return (
         <div className="flex items-center justify-center h-full px-4">
@@ -62,5 +62,5 @@ export default function TradeRestrictedClient({ reason }: { reason: string | nul
                 )}
             </div>
         </div>
-    );
+    )
 }

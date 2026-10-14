@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 //
 
@@ -18,7 +18,7 @@ export function Prompt({ title, onClose, children }: {
                 {children}
             </div>
         </div>
-    );
+    )
 }
 
 //
@@ -46,5 +46,5 @@ export function FormPrompt({ title, description, onClose, children }: {
                 {children}
             </div>
         </div>
-    );
+    )
 }

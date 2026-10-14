@@ -1,22 +1,22 @@
 "use client"
 
-import Image from "next/image";
-import Link from "next/link";
-import { RARITIES } from "@/lib/rarity";
+import Image from "next/image"
+import Link from "next/link"
+import { RARITIES } from "@/lib/rarity"
 
 type GameFilter = "all" | "CS2" | "Dota2" | "Rust" | "TF2"
 
 //
 
-const SLIDER_MAX = 5000;
-const FLOAT_MAX = 1;
+const SLIDER_MAX = 5000
+const FLOAT_MAX = 1
 
 const gameOptions: { label: string; value: GameFilter; href: string; icon: string }[] = [
     { label: "CS2", value: "CS2", href: "/market/cs2", icon: "/cs2.png" },
     { label: "Dota 2", value: "Dota2", href: "/market/dota2", icon: "/dota.png" },
     { label: "Rust", value: "Rust", href: "/market/rust", icon: "/rust.png" },
     { label: "TF2", value: "TF2", href: "/market/tf2", icon: "/tf2.png" },
-];
+]
 
 const wearOptions = [
     { label: "Factory New", short: "FN" },
@@ -24,12 +24,12 @@ const wearOptions = [
     { label: "Field-Tested", short: "FT" },
     { label: "Well-Worn", short: "WW" },
     { label: "Battle-Scarred", short: "BS" },
-];
+]
 
 const typeOptions = [
     { label: "Skins", value: "skin" },
     { label: "Commodities", value: "commodity" },
-];
+]
 
 const thumbClass = [
     "absolute w-full h-0 top-2",
@@ -40,7 +40,7 @@ const thumbClass = [
     "[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:border-0",
     "[&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:rounded-full",
     "[&::-moz-range-thumb]:bg-special [&::-moz-range-thumb]:cursor-pointer",
-].join(" ");
+].join(" ")
 
 //
 
@@ -62,7 +62,7 @@ function PriceInput({ value, onChange, placeholder, className }: {
                 className="bg-transparent text-xs w-full outline-none"
             />
         </div>
-    );
+    )
 }
 
 //
@@ -96,19 +96,19 @@ export default function LeftPanel({
     rarity: string | null,
     setRarity: (v: string | null) => void,
 }) {
-    const minVal = minPrice !== "" ? Math.min(parseFloat(minPrice) || 0, SLIDER_MAX) : 0;
-    const maxVal = maxPrice !== "" ? Math.min(parseFloat(maxPrice) || SLIDER_MAX, SLIDER_MAX) : SLIDER_MAX;
-    const fillLeft = (minVal / SLIDER_MAX) * 100;
-    const fillRight = 100 - (maxVal / SLIDER_MAX) * 100;
+    const minVal = minPrice !== "" ? Math.min(parseFloat(minPrice) || 0, SLIDER_MAX) : 0
+    const maxVal = maxPrice !== "" ? Math.min(parseFloat(maxPrice) || SLIDER_MAX, SLIDER_MAX) : SLIDER_MAX
+    const fillLeft = (minVal / SLIDER_MAX) * 100
+    const fillRight = 100 - (maxVal / SLIDER_MAX) * 100
 
-    const showFloat = currentGame === "CS2" || currentGame === "TF2";
-    const minFloatVal = minFloat !== "" ? Math.min(parseFloat(minFloat) || 0, FLOAT_MAX) : 0;
-    const maxFloatVal = maxFloat !== "" ? Math.min(parseFloat(maxFloat) || FLOAT_MAX, FLOAT_MAX) : FLOAT_MAX;
-    const floatFillLeft = (minFloatVal / FLOAT_MAX) * 100;
-    const floatFillRight = 100 - (maxFloatVal / FLOAT_MAX) * 100;
+    const showFloat = currentGame === "CS2" || currentGame === "TF2"
+    const minFloatVal = minFloat !== "" ? Math.min(parseFloat(minFloat) || 0, FLOAT_MAX) : 0
+    const maxFloatVal = maxFloat !== "" ? Math.min(parseFloat(maxFloat) || FLOAT_MAX, FLOAT_MAX) : FLOAT_MAX
+    const floatFillLeft = (minFloatVal / FLOAT_MAX) * 100
+    const floatFillRight = 100 - (maxFloatVal / FLOAT_MAX) * 100
 
-    const rarities = RARITIES[currentGame] ?? [];
-    const selectedRarity = rarities.find(r => r.key === rarity);
+    const rarities = RARITIES[currentGame] ?? []
+    const selectedRarity = rarities.find(r => r.key === rarity)
 
     return (
         <>
@@ -157,8 +157,8 @@ export default function LeftPanel({
                             <input
                                 type="range" min={0} max={SLIDER_MAX} step={1} value={minVal}
                                 onChange={e => {
-                                    const v = parseInt(e.target.value);
-                                    setMinPrice(v === 0 ? "" : String(v));
+                                    const v = parseInt(e.target.value)
+                                    setMinPrice(v === 0 ? "" : String(v))
                                 }}
                                 className={thumbClass}
                             />
@@ -166,8 +166,8 @@ export default function LeftPanel({
                             <input
                                 type="range" min={0} max={SLIDER_MAX} step={1} value={maxVal}
                                 onChange={e => {
-                                    const v = parseInt(e.target.value);
-                                    setMaxPrice(v === SLIDER_MAX ? "" : String(v));
+                                    const v = parseInt(e.target.value)
+                                    setMaxPrice(v === SLIDER_MAX ? "" : String(v))
                                 }}
                                 className={thumbClass}
                             />
@@ -260,8 +260,8 @@ export default function LeftPanel({
                                 <input
                                     type="range" min={0} max={FLOAT_MAX} step={0.001} value={minFloatVal}
                                     onChange={e => {
-                                        const v = parseFloat(e.target.value);
-                                        setMinFloat(v === 0 ? "" : String(v));
+                                        const v = parseFloat(e.target.value)
+                                        setMinFloat(v === 0 ? "" : String(v))
                                     }}
                                     className={thumbClass}
                                 />
@@ -269,8 +269,8 @@ export default function LeftPanel({
                                 <input
                                     type="range" min={0} max={FLOAT_MAX} step={0.001} value={maxFloatVal}
                                     onChange={e => {
-                                        const v = parseFloat(e.target.value);
-                                        setMaxFloat(v === FLOAT_MAX ? "" : String(v));
+                                        const v = parseFloat(e.target.value)
+                                        setMaxFloat(v === FLOAT_MAX ? "" : String(v))
                                     }}
                                     className={thumbClass}
                                 />
@@ -377,5 +377,5 @@ export default function LeftPanel({
                 </div>
             </div>
         </>
-    );
+    )
 }

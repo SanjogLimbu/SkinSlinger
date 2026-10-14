@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { signOut } from "next-auth/react";
-import Image from "next/image";
-import Link from "next/link";
-import { toSlug } from "@/app/lib/site";
+import { useState, useEffect } from "react"
+import { signOut } from "next-auth/react"
+import Image from "next/image"
+import Link from "next/link"
+import { toSlug } from "@/app/lib/site"
 
 //
 

@@ -1,8 +1,8 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { redirect } from "next/navigation";
-import OrdersClient from "./OrdersClient";
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
+import { prisma } from "@/lib/db"
+import { redirect } from "next/navigation"
+import OrdersClient from "./OrdersClient"
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -13,16 +13,16 @@ export const metadata: Metadata = {
 //
 
 export default async function OrdersPage() {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) redirect("/");
+    if (!session?.user?.id) redirect("/")
 
-    const userId = session.user.id;
+    const userId = session.user.id
 
     const me = await prisma.user.findUnique({
         where: { id: userId },
         select: { notificationEmail: true, pendingEmail: true },
-    });
+    })
 
     const rows = await prisma.purchase.findMany({
         where: {
@@ -37,7 +37,7 @@ export default async function OrdersPage() {
         },
         orderBy: { createdAt: "desc" },
         take: 200,
-    });
+    })
 
     // Build a sanitized DTO — never ship counterparty emails to the client
     // (anything passed to a client component is readable in the RSC payload,
@@ -61,7 +61,7 @@ export default async function OrdersPage() {
         buyerImage: p.buyer.image,
         sellerImage: p.seller.image,
         buyerTradeUrl: p.sellerId === userId ? (p.buyerTradeUrl ?? p.buyer.steam_trade_url) : null,
-    }));
+    }))
 
     return (
         <OrdersClient
@@ -70,5 +70,5 @@ export default async function OrdersPage() {
             notificationEmail={me?.notificationEmail ?? null}
             pendingEmail={me?.pendingEmail ?? null}
         />
-    );
+    )
 }

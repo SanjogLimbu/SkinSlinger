@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { SessionProvider } from "next-auth/react";
-import { BasketProvider } from "./BasketProvider";
+import { SessionProvider } from "next-auth/react"
+import { BasketProvider } from "./BasketProvider"
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     return (
@@ -10,5 +10,5 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 {children}
             </BasketProvider>
         </SessionProvider>
-    );
+    )
 }

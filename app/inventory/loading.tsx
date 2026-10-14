@@ -72,5 +72,5 @@ export default function InventoryLoading() {
                 </div>
             </div>
         </>
-    );
+    )
 }

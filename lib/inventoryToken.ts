@@ -1,10 +1,10 @@
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify } from 'jose'
 
 //
 
-type InventoryItem = { assetId: string; marketName: string };
+type InventoryItem = { assetId: string; marketName: string }
 
-const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
+const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET)
 
 export async function signInventoryToken(userId: string, items: InventoryItem[]): Promise<string> {
     return new SignJWT({ items })
@@ -12,15 +12,15 @@ export async function signInventoryToken(userId: string, items: InventoryItem[])
         .setSubject(userId)
         .setIssuedAt()
         .setExpirationTime('30m')
-        .sign(secret);
+        .sign(secret)
 }
 
 export async function verifyInventoryToken(token: string, userId: string): Promise<InventoryItem[] | null> {
     try {
-        const { payload } = await jwtVerify(token, secret);
-        if (payload.sub !== userId) return null;
-        return payload.items as InventoryItem[];
+        const { payload } = await jwtVerify(token, secret)
+        if (payload.sub !== userId) return null
+        return payload.items as InventoryItem[]
     } catch {
-        return null;
+        return null
     }
 }

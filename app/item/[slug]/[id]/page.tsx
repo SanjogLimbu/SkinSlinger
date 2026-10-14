@@ -1,29 +1,29 @@
-import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import { cache, Suspense } from "react";
-import type { Metadata } from "next";
-import BuyButton from "./BuyButton";
-import FloatBar from "@/app/components/FloatBar";
-import PriceHistory from "@/app/components/PriceHistory";
-import { GAME_NAMES, GAME_SLUGS, getBaseUrl, JsonLd } from "@/app/lib/site";
-import { RARITIES, rarityBackground } from "@/lib/rarity";
+import { prisma } from "@/lib/db"
+import { notFound } from "next/navigation"
+import Image from "next/image"
+import Link from "next/link"
+import { cache, Suspense } from "react"
+import type { Metadata } from "next"
+import BuyButton from "./BuyButton"
+import FloatBar from "@/app/components/FloatBar"
+import PriceHistory from "@/app/components/PriceHistory"
+import { GAME_NAMES, GAME_SLUGS, getBaseUrl, JsonLd } from "@/app/lib/site"
+import { RARITIES, rarityBackground } from "@/lib/rarity"
 
 function wearLabel(f: number): string {
-    if (f < 0.07) return 'Factory New';
-    if (f < 0.15) return 'Minimal Wear';
-    if (f < 0.38) return 'Field-Tested';
-    if (f < 0.45) return 'Well-Worn';
-    return 'Battle-Scarred';
+    if (f < 0.07) return 'Factory New'
+    if (f < 0.15) return 'Minimal Wear'
+    if (f < 0.38) return 'Field-Tested'
+    if (f < 0.45) return 'Well-Worn'
+    return 'Battle-Scarred'
 }
 
 //
 
 const getListing = cache(async (id: string) => {
-    const listing = await prisma.item_listing.findUnique({ where: { id } });
+    const listing = await prisma.item_listing.findUnique({ where: { id } })
     if (!listing || !listing.icon || !listing.hexColor || !listing.game) {
-        return null;
+        return null
     }
 
     const [float, commodityCount, seller, inspectRows] = await Promise.all([
@@ -41,22 +41,22 @@ const getListing = cache(async (id: string) => {
                 LIMIT 1
             `
             : Promise.resolve([]),
-    ]);
+    ])
 
-    return { listing, float, commodityCount, seller, inspectLink: inspectRows[0]?.link ?? null };
-});
+    return { listing, float, commodityCount, seller, inspectLink: inspectRows[0]?.link ?? null }
+})
 
 //
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; id: string }> }): Promise<Metadata> {
-    const { slug, id } = await params;
-    const data = await getListing(id);
-    if (!data) return {};
+    const { slug, id } = await params
+    const data = await getListing(id)
+    if (!data) return {}
 
-    const { listing } = data;
-    const gameName = GAME_NAMES[listing.game!] ?? listing.game!;
-    const title = `${listing.marketName} - ${gameName} - SkinSlinger`;
-    const description = `Buy ${listing.marketName}. No KYC, 0% sales fee, pay with crypto. Your ${gameName} skin marketplace.`;
+    const { listing } = data
+    const gameName = GAME_NAMES[listing.game!] ?? listing.game!
+    const title = `${listing.marketName} - ${gameName} - SkinSlinger`
+    const description = `Buy ${listing.marketName}. No KYC, 0% sales fee, pay with crypto. Your ${gameName} skin marketplace.`
 
     return {
         title,
@@ -74,29 +74,29 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
             description,
             images: [listing.icon!],
         },
-    };
+    }
 }
 
 //
 
 export default async function ItemPage({ params, searchParams }: { params: Promise<{ slug: string; id: string }>; searchParams: Promise<{ from?: string }> }) {
-    const { slug, id } = await params;
-    const { from } = await searchParams;
-    const data = await getListing(id);
-    if (!data) notFound();
+    const { slug, id } = await params
+    const { from } = await searchParams
+    const data = await getListing(id)
+    if (!data) notFound()
 
-    const { listing, float, commodityCount, seller, inspectLink } = data;
-    const gameName = GAME_NAMES[listing.game!] ?? listing.game!;
-    const gameSlug = GAME_SLUGS[listing.game!] ?? "cs2";
+    const { listing, float, commodityCount, seller, inspectLink } = data
+    const gameName = GAME_NAMES[listing.game!] ?? listing.game!
+    const gameSlug = GAME_SLUGS[listing.game!] ?? "cs2"
 
-    const sellerSteamId = from === "profile" ? seller : null;
-    const stickers = float?.stickers as { stickerId: number; slot: number; name: string; image: string; wear: number | null }[] | null;
+    const sellerSteamId = from === "profile" ? seller : null
+    const stickers = float?.stickers as { stickerId: number; slot: number; name: string; image: string; wear: number | null }[] | null
 
     // CS2 commodities reuse these colours under other tier names, so only skins get a label
-    const hasRarityName = !(listing.game === "CS2" && listing.commodity);
-    const rarity = hasRarityName ? RARITIES[listing.game!]?.find(r => r.hex === listing.hexColor!.toLowerCase()) : undefined;
+    const hasRarityName = !(listing.game === "CS2" && listing.commodity)
+    const rarity = hasRarityName ? RARITIES[listing.game!]?.find(r => r.hex === listing.hexColor!.toLowerCase()) : undefined
 
-    const base = getBaseUrl();
+    const base = getBaseUrl()
 
     const jsonLd = {
         "@context": "https://schema.org/",
@@ -113,7 +113,7 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
             "url": `${base}/item/${slug}/${id}`,
             "seller": { "@type": "Organization", "name": "SkinSlinger", "url": base },
         },
-    };
+    }
 
     const breadcrumbJsonLd = {
         "@context": "https://schema.org",
@@ -124,7 +124,7 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
             { "@type": "ListItem", "position": 3, "name": listing.marketName, "item": `${base}/item/${slug}` },
             { "@type": "ListItem", "position": 4, "name": `$${listing.price.toFixed(2)}`, "item": `${base}/item/${slug}/${id}` },
         ],
-    };
+    }
 
     return (
         <div className="overflow-y-auto h-full pt-24 pb-12 px-4 flex justify-center">
@@ -269,5 +269,5 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
             <JsonLd data={jsonLd} />
             <JsonLd data={breadcrumbJsonLd} />
         </div>
-    );
+    )
 }

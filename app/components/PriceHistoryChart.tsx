@@ -1,78 +1,78 @@
 "use client"
 
-import { useState } from "react";
-import type { PricePoint } from "@/lib/steam";
+import { useState } from "react"
+import type { PricePoint } from "@/lib/steam"
 
 //
 
-const LINE_COLOR = "#1f9fca";
+const LINE_COLOR = "#1f9fca"
 
-const PLOT_HEIGHT = 180;
+const PLOT_HEIGHT = 180
 
 //
 
 // A round step (1, 2 or 5 times a power of ten) giving about three ticks
 function tickStep(span: number): number {
-    const rough = span / 3;
-    const power = Math.pow(10, Math.floor(Math.log10(rough)));
-    const multiple = [1, 2, 5, 10].find(m => m * power >= rough) ?? 10;
+    const rough = span / 3
+    const power = Math.pow(10, Math.floor(Math.log10(rough)))
+    const multiple = [1, 2, 5, 10].find(m => m * power >= rough) ?? 10
 
-    return multiple * power;
+    return multiple * power
 }
 
 
 function formatPrice(price: number, decimals = 2): string {
-    return `$${price.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+    return `$${price.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`
 }
 
 
 // Fixed locale and UTC, so the server and the browser render the same text
 function formatDate(date: string, options: Intl.DateTimeFormatOptions): string {
-    return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
+    return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { ...options, timeZone: "UTC" })
 }
 
 //
 
 export default function PriceHistoryChart({ points }: { points: PricePoint[] }) {
     // Index of the picked day; null shows the latest
-    const [active, setActive] = useState<number | null>(null);
+    const [active, setActive] = useState<number | null>(null)
 
-    const lastIndex = points.length - 1;
-    const prices = points.map(point => point.price);
-    const low = Math.min(...prices);
-    const high = Math.max(...prices);
-    const latest = prices[lastIndex];
+    const lastIndex = points.length - 1
+    const prices = points.map(point => point.price)
+    const low = Math.min(...prices)
+    const high = Math.max(...prices)
+    const latest = prices[lastIndex]
 
     // Round ticks that enclose every price
-    const step = tickStep(high - low || high * 0.1);
-    const yMin = Math.floor(low / step) * step;
-    const yMax = Math.max(Math.ceil(high / step) * step, yMin + step);
-    const ticks = Array.from({ length: Math.round((yMax - yMin) / step) + 1 }, (_, i) => yMin + i * step);
+    const step = tickStep(high - low || high * 0.1)
+    const yMin = Math.floor(low / step) * step
+    const yMax = Math.max(Math.ceil(high / step) * step, yMin + step)
+    const ticks = Array.from({ length: Math.round((yMax - yMin) / step) + 1 }, (_, i) => yMin + i * step)
 
     // Positions are percentages, so the chart stretches to any width
-    const xOf = (index: number) => index / lastIndex * 100;
-    const yOf = (price: number) => (1 - (price - yMin) / (yMax - yMin)) * 100;
+    const xOf = (index: number) => index / lastIndex * 100
+    const yOf = (price: number) => (1 - (price - yMin) / (yMax - yMin)) * 100
 
-    const line = points.map((point, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(2)} ${yOf(point.price).toFixed(2)}`).join(" ");
+    const line = points.map((point, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(2)} ${yOf(point.price).toFixed(2)}`).join(" ")
 
     const monthStarts = points
         .map((point, i) => ({ i, date: point.date }))
-        .filter(({ i, date }) => i > 0 && date.slice(0, 7) !== points[i - 1].date.slice(0, 7));
+        .filter(({ i, date }) => i > 0 && date.slice(0, 7) !== points[i - 1].date.slice(0, 7))
 
-    const shown = active ?? lastIndex;
+    const shown = active ?? lastIndex
 
     function pickFromPointer(e: React.PointerEvent<HTMLDivElement>) {
-        const plot = e.currentTarget.getBoundingClientRect();
-        const ratio = Math.min(Math.max((e.clientX - plot.left) / plot.width, 0), 1);
+        const plot = e.currentTarget.getBoundingClientRect()
+        const ratio = Math.min(Math.max((e.clientX - plot.left) / plot.width, 0), 1)
 
-        setActive(Math.round(ratio * lastIndex));
+        setActive(Math.round(ratio * lastIndex))
     }
 
     function pickFromKeyboard(e: React.KeyboardEvent<HTMLDivElement>) {
-        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
 
-        e.preventDefault();
-        setActive(Math.min(Math.max(shown + (e.key === "ArrowLeft" ? -1 : 1), 0), lastIndex));
+        e.preventDefault()
+        setActive(Math.min(Math.max(shown + (e.key === "ArrowLeft" ? -1 : 1), 0), lastIndex))
     }
 
 
@@ -159,5 +159,5 @@ export default function PriceHistoryChart({ points }: { points: PricePoint[] }) 
                 ))}
             </div>
         </div>
-    );
+    )
 }

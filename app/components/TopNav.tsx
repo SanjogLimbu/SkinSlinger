@@ -1,51 +1,51 @@
-"use client";
+"use client"
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useBasket } from './BasketProvider';
-import { signIn, signOut } from 'next-auth/react';
+import { useBasket } from './BasketProvider'
+import { signIn, signOut } from 'next-auth/react'
 
 //
 
 export default function TopNav() {
-    const { data: session, status } = useSession();
-    const { basket } = useBasket();
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [pendingOrderCount, setPendingOrderCount] = useState(0);
+    const { data: session, status } = useSession()
+    const { basket } = useBasket()
+    const [menuOpen, setMenuOpen] = useState(false)
+    const [pendingOrderCount, setPendingOrderCount] = useState(0)
 
     // The logo box matches the market's wider left panel
-    const isMarket = usePathname().startsWith("/market");
+    const isMarket = usePathname().startsWith("/market")
 
     let basketCount = 0
 
     for (let i = 0; i < basket.length; i++) {
-        const item = basket[i];
+        const item = basket[i]
 
         if ("quantity" in item) {
-            basketCount += item.quantity;
+            basketCount += item.quantity
         } else {
-            basketCount += 1;
+            basketCount += 1
         }
     }
 
     useEffect(() => {
         if (!session?.user?.id || !session.user.steam_trade_url) {
-            setPendingOrderCount(0);
-            return;
+            setPendingOrderCount(0)
+            return
         }
 
-        let cancelled = false;
+        let cancelled = false
 
         fetch("/api/orders/pending")
             .then(res => res.json())
             .then(data => { if (!cancelled) setPendingOrderCount(data.count ?? 0); })
-            .catch(() => {});
+            .catch(() => {})
 
-        return () => { cancelled = true; };
-    }, [session?.user?.id, session?.user?.steam_trade_url]);
+        return () => { cancelled = true; }
+    }, [session?.user?.id, session?.user?.steam_trade_url])
 
 
     // Shared by the desktop bar and the mobile dropdown
@@ -69,7 +69,7 @@ export default function TopNav() {
                 Inventory
             </Link>
         </>
-    );
+    )
 
 
     return (

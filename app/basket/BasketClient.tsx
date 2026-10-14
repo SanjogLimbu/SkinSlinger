@@ -1,38 +1,38 @@
 "use client"
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
-import Image from "next/image";
-import { useBasket } from "@/app/components/BasketProvider";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import SteamUrlPrompt from "@/app/components/SteamUrlPrompt";
-import { Prompt } from "@/app/components/Prompt";
+import { useState } from "react"
+import { useSession } from "next-auth/react"
+import Image from "next/image"
+import { useBasket } from "@/app/components/BasketProvider"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import SteamUrlPrompt from "@/app/components/SteamUrlPrompt"
+import { Prompt } from "@/app/components/Prompt"
 
 //
 
 export default function BasketClient({ hasPendingPurchase }: { hasPendingPurchase: boolean }) {
-    const { data: session } = useSession();
-    const { basket, setBasket, clearBasketState } = useBasket();
-    const [checking, setChecking] = useState(false);
-    const [error, setError] = useState("");
-    const [inventoryPrompt, setInventoryPrompt] = useState(false);
-    const [linkPrompt, setLinkPrompt] = useState(false);
-    const router = useRouter();
+    const { data: session } = useSession()
+    const { basket, setBasket, clearBasketState } = useBasket()
+    const [checking, setChecking] = useState(false)
+    const [error, setError] = useState("")
+    const [inventoryPrompt, setInventoryPrompt] = useState(false)
+    const [linkPrompt, setLinkPrompt] = useState(false)
+    const router = useRouter()
 
     useEffect(() => {
-        if (session === null) router.push("/");
+        if (session === null) router.push("/")
     }, [session, router])
 
 
     function remove(id: string) {
-        setBasket(basket.filter(item => item.id !== id));
+        setBasket(basket.filter(item => item.id !== id))
     }
 
 
     async function checkout() {
-        setChecking(true);
-        setError("");
+        setChecking(true)
+        setError("")
 
         const res = await fetch("/api/checkout", {
             method: "POST",
@@ -46,32 +46,32 @@ export default function BasketClient({ hasPendingPurchase }: { hasPendingPurchas
                     expectedPrice: i.price,
                 })),
             }),
-        });
+        })
 
 
-        const data = await res.json();
+        const data = await res.json()
 
         if (res.ok) {
-            clearBasketState();
+            clearBasketState()
         } else if (data.error?.includes("link your Steam")) {
-            setLinkPrompt(true);
+            setLinkPrompt(true)
         } else if (data.error?.includes("inventory")) {
-            setInventoryPrompt(true);
+            setInventoryPrompt(true)
         } else {
-            setError(data.error ?? "Checkout failed");
+            setError(data.error ?? "Checkout failed")
         }
 
 
-        setChecking(false);
+        setChecking(false)
     }
 
 
-    const total = basket.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = basket.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
 
-    const cash = session?.user?.cash ?? 0;
-    const canAfford = cash >= total && basket.length > 0;
-    const canCheckout = canAfford && !checking && !hasPendingPurchase;
+    const cash = session?.user?.cash ?? 0
+    const canAfford = cash >= total && basket.length > 0
+    const canCheckout = canAfford && !checking && !hasPendingPurchase
 
     return (
         <div className="w-full h-full flex justify-center items-center">
@@ -196,5 +196,5 @@ export default function BasketClient({ hasPendingPurchase }: { hasPendingPurchas
                 </div>
             </div>
         </div>
-    );
+    )
 }

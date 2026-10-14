@@ -1,24 +1,24 @@
 "use client"
 
-import { useState } from "react";
-import { useBasket } from "@/app/components/BasketProvider";
-import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState } from "react"
+import { useBasket } from "@/app/components/BasketProvider"
+import { signIn, useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export default function BuyButton({
     id, marketName, price, icon, hexColor, commodity, maxQuantity,
 }: {
-    id: string;
-    marketName: string;
-    price: number;
-    icon: string;
-    hexColor: string;
-    commodity: boolean;
-    maxQuantity: number;
+    id: string
+    marketName: string
+    price: number
+    icon: string
+    hexColor: string
+    commodity: boolean
+    maxQuantity: number
 }) {
-    const { basket, setBasket } = useBasket();
-    const { data: session } = useSession();
-    const router = useRouter();
+    const { basket, setBasket } = useBasket()
+    const { data: session } = useSession()
+    const router = useRouter()
     const [quantity, setQuantity] = useState(1)
 
     const qty = Math.max(1, Math.min(quantity, maxQuantity))
@@ -26,18 +26,18 @@ export default function BuyButton({
 
     function handleBuy() {
         if (!session) {
-            signIn("steam");
-            return;
+            signIn("steam")
+            return
         }
 
-        const alreadyIn = basket.find(b => commodity ? (b.marketName === marketName && b.commodity) : b.id === id);
+        const alreadyIn = basket.find(b => commodity ? (b.marketName === marketName && b.commodity) : b.id === id)
         if (alreadyIn) {
-            router.push("/basket");
-            return;
+            router.push("/basket")
+            return
         }
 
-        setBasket([...basket, { id, marketName, price, icon, hexColor, commodity, quantity: qty, maxQuantity }]);
-        router.push("/basket");
+        setBasket([...basket, { id, marketName, price, icon, hexColor, commodity, quantity: qty, maxQuantity }])
+        router.push("/basket")
     }
 
     return (
@@ -71,5 +71,5 @@ export default function BuyButton({
                 {commodity && maxQuantity > 1 ? `BUY ${qty} — $${total.toFixed(2)}` : "BUY NOW"}
             </button>
         </div>
-    );
+    )
 }

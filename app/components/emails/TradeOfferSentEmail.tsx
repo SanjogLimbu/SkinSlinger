@@ -1,17 +1,17 @@
-import * as React from 'react';
+import * as React from 'react'
 
 //
 
 interface Props {
-    sellerName: string;
-    items: { marketName: string; price: number }[];
+    sellerName: string
+    items: { marketName: string; price: number }[]
 }
 
 //
 
 export function TradeOfferSentEmail({ sellerName, items }: Props) {
-    const total = items.reduce((sum, item) => sum + item.price, 0);
-    const many = items.length > 1;
+    const total = items.reduce((sum, item) => sum + item.price, 0)
+    const many = items.length > 1
 
     return (
         <div style={{ backgroundColor: '#1f1f1f', padding: '40px 0', fontFamily: 'Arial, sans-serif' }}>
@@ -54,5 +54,5 @@ export function TradeOfferSentEmail({ sellerName, items }: Props) {
                 </div>
             </div>
         </div>
-    );
+    )
 }

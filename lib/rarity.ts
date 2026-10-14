@@ -1,10 +1,10 @@
-type Rarity = { key: string, label: string, hex: string };
+type Rarity = { key: string, label: string, hex: string }
 
 //
 
 // Card background in a rarity colour, with a spotlight `spotlightY` percent down
 export function rarityBackground(hexColor: string, spotlightY: number): string {
-    return `radial-gradient(circle at 50% ${spotlightY}%, #${hexColor}40, transparent 58%), linear-gradient(to bottom, #${hexColor}66, var(--color-accent) 42%, var(--color-secondary))`;
+    return `radial-gradient(circle at 50% ${spotlightY}%, #${hexColor}40, transparent 58%), linear-gradient(to bottom, #${hexColor}66, var(--color-accent) 42%, var(--color-secondary))`
 }
 
 //
@@ -30,4 +30,4 @@ export const RARITIES: Record<string, Rarity[]> = {
         { key: "immortal", label: "Immortal", hex: "e4ae39" },
         { key: "arcana", label: "Arcana", hex: "ade55c" },
     ],
-};
+}

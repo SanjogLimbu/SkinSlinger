@@ -1,17 +1,17 @@
-import * as React from 'react';
+import * as React from 'react'
 
 //
 
 interface Props {
-    buyerName: string;
-    buyerTradeUrl: string;
-    items: { marketName: string; price: number }[];
+    buyerName: string
+    buyerTradeUrl: string
+    items: { marketName: string; price: number }[]
 }
 
 //
 
 export function PurchaseNotificationEmail({ buyerName, buyerTradeUrl, items }: Props) {
-    const total = items.reduce((sum, item) => sum + item.price, 0);
+    const total = items.reduce((sum, item) => sum + item.price, 0)
 
     return (
         <div style={{ backgroundColor: '#1f1f1f', padding: '40px 0', fontFamily: 'Arial, sans-serif' }}>
@@ -62,5 +62,5 @@ export function PurchaseNotificationEmail({ buyerName, buyerTradeUrl, items }: P
                 </div>
             </div>
         </div>
-    );
+    )
 }
