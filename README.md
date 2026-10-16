@@ -20,6 +20,7 @@ Users log in via Steam OAUTH, list items from their inventory, and buy from each
 | Browser extension | Chrome Manifest V3, plain JavaScript | Filling Steam trade offers and reporting their status |
 | Charts | Hand-written SVG | Price history chart on item pages |
 | Hosting | Vercel, Vercel Analytics | Deployment and page analytics |
+| Testing | Vitest 5, GitHub Actions | Unit tests for pricing, delivery verification and trade checks |
 | Tooling | ESLint 9 | Linting |
 
 ## What it does
