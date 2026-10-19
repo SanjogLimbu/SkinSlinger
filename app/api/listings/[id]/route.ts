@@ -12,6 +12,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             return Response.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+
         const { id } = await params
         const { price } = await req.json()
 
@@ -19,24 +20,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             return Response.json({ error: "Invalid price" }, { status: 400 })
         }
 
+
         const listing = await prisma.item_listing.findUnique({ where: { id } })
 
         if (!listing) {
             return Response.json({ error: "Listing not found" }, { status: 404 })
         }
 
+
         if (listing.userId !== session.user.id) {
             return Response.json({ error: "Forbidden" }, { status: 403 })
         }
 
+
         await prisma.item_listing.update({ where: { id }, data: { price } })
 
         return Response.json(null, { status: 200 })
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error)
+
         return Response.json({ error: "Server error" }, { status: 500 })
     }
 }
+
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -46,6 +53,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
             return Response.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+
         const { id } = await params
 
         const listing = await prisma.item_listing.findUnique({ where: { id } })
@@ -54,19 +62,20 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
             return Response.json({ error: "Listing not found" }, { status: 404 })
         }
 
+
         if (listing.userId !== session.user.id) {
             return Response.json({ error: "Forbidden" }, { status: 403 })
         }
 
+
+        // Buy orders stay, since they're a standing order book independent of listings.
         await prisma.item_listing.delete({ where: { id } })
 
-        // Buy orders are a standing order book — they persist independently of listings
-        // (the old "refund all buy orders when listings hit 0" cleanup let any seller
-        // wipe the book, and its stale read could double-refund against a live match).
-
         return Response.json(null, { status: 200 })
-    } catch (error) {
+    }
+    catch (error) {
         console.error(error)
+
         return Response.json({ error: "Server error" }, { status: 500 })
     }
 }

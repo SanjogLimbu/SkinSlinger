@@ -34,12 +34,15 @@ type ListingGroup = {
 
 function groupListings(listings: Listing[]): ListingGroup[] {
     const map = new Map<string, ListingGroup>()
+
     for (const l of listings) {
         const key = l.commodity ? l.marketName : l.id
         const existing = map.get(key)
+
         if (existing) {
             existing.ids.push(l.id)
-        } else {
+        }
+        else {
             map.set(key, {
                 ids: [l.id],
                 marketName: l.marketName,
@@ -52,6 +55,8 @@ function groupListings(listings: Listing[]): ListingGroup[] {
             })
         }
     }
+
+
     return [...map.values()]
 }
 
@@ -67,6 +72,7 @@ function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () =>
     const parsedPrice = parseFloat(priceStr)
     const isDirty = !isNaN(parsedPrice) && parsedPrice > 0 && parsedPrice !== basePrice
     const totalPrice = (isNaN(parsedPrice) ? group.price : parsedPrice) * group.ids.length
+    const floatText = group.floatValue?.toFixed(9).replace(/0+$/, '') ?? ''
 
     async function savePrice() {
         setSaving(true)
@@ -90,16 +96,21 @@ function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () =>
                 return
             }
         }
+
+
         router.refresh()
         setSaving(false)
     }
 
+
     function delist() {
         onDelist()
+
         for (const id of group.ids) {
             fetch(`/api/listings/${id}`, { method: "DELETE" })
         }
     }
+
 
     return (
         <div
@@ -112,7 +123,9 @@ function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () =>
                 </p>
 
                 {group.ids.length > 1 && (
-                    <p className="text-[11px] opacity-60 shrink-0">[x{group.ids.length}]</p>
+                    <p className="text-[11px] opacity-60 shrink-0">
+                        [x{group.ids.length}]
+                    </p>
                 )}
             </div>
 
@@ -121,20 +134,49 @@ function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () =>
                 style={{ filter: `drop-shadow(0 0 10px #${group.hexColor}99)` }}
             >
                 {group.icon && (
-                    <Image src={group.icon} alt={group.marketName} width={90} height={90} style={{ width: 'auto', height: 'auto', maxHeight: '90px' }} />
+                    <Image
+                        src={group.icon}
+                        alt={group.marketName}
+                        width={90}
+                        height={90}
+                        style={{
+                            width: 'auto',
+                            height: 'auto',
+                            maxHeight: '90px',
+                        }}
+                    />
                 )}
             </div>
 
             <div className={`shrink-0 mt-auto px-2 pb-1 flex flex-col gap-0.5 text-[10px] text-gray-500 ${group.floatValue === null ? 'invisible' : ''}`}>
-                {group.paintSeed != null
-                    ? <span>Pattern <span className="text-gray-300">#{group.paintSeed}</span></span>
-                    : <span>&nbsp;</span>
-                }
-                <span>Float <span className="text-gray-300 font-mono">{group.floatValue?.toFixed(9).replace(/0+$/, '') ?? ''}</span></span>
+                {group.paintSeed != null ? (
+                    <span>
+                        Pattern{" "}
+
+                        <span className="text-gray-300">
+                            #{group.paintSeed}
+                        </span>
+                    </span>
+                ) : (
+                    <span>
+                        &nbsp;
+                    </span>
+                )}
+
+                <span>
+                    Float{" "}
+
+                    <span className="text-gray-300 font-mono">
+                        {floatText}
+                    </span>
+                </span>
             </div>
 
             <div className={`shrink-0 px-2 pb-1 ${group.floatValue === null ? 'invisible' : ''}`}>
-                <FloatBar value={group.floatValue ?? 0} showLabels={false} />
+                <FloatBar
+                    value={group.floatValue ?? 0}
+                    showLabels={false}
+                />
             </div>
 
             <div className="shrink-0 px-2 pt-2 pb-1 flex flex-col gap-1">
@@ -167,9 +209,11 @@ function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () =>
                     )}
                 </div>
 
-                {error && <p className="text-red-400 text-xs">
-                    {error}
-                </p>}
+                {error && (
+                    <p className="text-red-400 text-xs">
+                        {error}
+                    </p>
+                )}
             </div>
 
             <button
@@ -192,10 +236,12 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
         setGroups(prev => prev.filter(g => g.ids[0] !== id))
     }
 
+
     function delistAll() {
         const allIds = groups.flatMap(g => g.ids)
         setGroups([])
         setConfirmDelistAll(false)
+
         fetch("/api/listings", {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
@@ -203,34 +249,63 @@ export default function ListingsClient({ listings }: { listings: Listing[] }) {
         })
     }
 
+
     return (
         <div className="h-full flex flex-col pt-20 px-4 md:px-8">
             {confirmDelistAll && (
                 <Prompt title={`Delist all ${listings.length} listings?`}>
-                    <p className="text-sm text-gray-400">This cannot be undone.</p>
+                    <p className="text-sm text-gray-400">
+                        This cannot be undone.
+                    </p>
+
                     <div className="flex gap-2">
-                        <button onClick={delistAll} className="flex-1 h-10 rounded-sm bg-negative button text-sm">Delist all</button>
-                        <button onClick={() => setConfirmDelistAll(false)} className="flex-1 h-10 rounded-sm bg-accent button text-sm">Cancel</button>
+                        <button
+                            onClick={delistAll}
+                            className="flex-1 h-10 rounded-sm bg-negative button text-sm"
+                        >
+                            Delist all
+                        </button>
+
+                        <button
+                            onClick={() => setConfirmDelistAll(false)}
+                            className="flex-1 h-10 rounded-sm bg-accent button text-sm"
+                        >
+                            Cancel
+                        </button>
                     </div>
                 </Prompt>
             )}
 
             <div className="w-full max-w-7xl mx-auto flex flex-col gap-4 flex-1 min-h-0">
                 <div className="flex items-center justify-between shrink-0">
-                    <p className="text-xl">My Listings</p>
+                    <p className="text-xl">
+                        My Listings
+                    </p>
+
                     {groups.length > 0 && (
-                        <button onClick={() => setConfirmDelistAll(true)} className="w-50 h-10 bg-accent button rounded-sm">
+                        <button
+                            onClick={() => setConfirmDelistAll(true)}
+                            className="w-50 h-10 bg-accent button rounded-sm"
+                        >
                             Delist all
                         </button>
                     )}
                 </div>
 
                 {groups.length === 0 ? (
-                    <p className="opacity-40">You have no active listings.</p>
+                    <p className="opacity-40">
+                        You have no active listings.
+                    </p>
                 ) : (
                     <div className="overflow-y-auto flex-1 px-2 pt-2 pb-8">
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                            {groups.map((g) => <ListingCard key={g.ids[0]} group={g} onDelist={() => removeGroup(g.ids[0])} />)}
+                            {groups.map((g) => (
+                                <ListingCard
+                                    key={g.ids[0]}
+                                    group={g}
+                                    onDelist={() => removeGroup(g.ids[0])}
+                                />
+                            ))}
                         </div>
                     </div>
                 )}

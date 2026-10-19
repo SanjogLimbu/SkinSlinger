@@ -13,14 +13,24 @@ import { useEmailVerification } from '@/app/components/useEmailVerification'
 
 //
 
+type PriceRequest = { market_name: string, market_hash_name: string, game: string }
+
+//
+
 function timeAgo(date: Date): string {
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
 
-    if (seconds < 60) return "just now"
+    if (seconds < 60) {
+        return "just now"
+    }
+
 
     const minutes = Math.floor(seconds / 60)
 
-    if (minutes < 60) return `${minutes}m ago`
+    if (minutes < 60) {
+        return `${minutes}m ago`
+    }
+
 
     const hours = Math.floor(minutes / 60)
 
@@ -30,14 +40,26 @@ function timeAgo(date: Date): string {
 //
 
 function PromptNotificationEmail({ onDone }: { onDone: () => void }) {
-    const { step, email, setEmail, code, setCode, loading, error, sendCode, confirm } = useEmailVerification()
+    const {
+        step,
+        email,
+        setEmail,
+        code,
+        setCode,
+        loading,
+        error,
+        sendCode,
+        confirm,
+    } = useEmailVerification()
+
+    const description = step === "done"
+        ? "You're all set — we'll email you about sales and trades."
+        : "Get notified when you make a sale or need to send a trade offer. Completely optional."
 
     return (
         <FormPrompt
             title="Want email notifications?"
-            description={step === "done"
-                ? "You're all set — we'll email you about sales and trades."
-                : "Get notified when you make a sale or need to send a trade offer. Completely optional."}
+            description={description}
             onClose={onDone}
         >
             {step === "idle" && (
@@ -49,7 +71,13 @@ function PromptNotificationEmail({ onDone }: { onDone: () => void }) {
                         placeholder="you@example.com"
                         className="w-full h-10 bg-accent rounded-sm border border-gray-500 outline-none px-3 text-sm"
                     />
-                    {error && <p className="text-red-500 text-xs">{error}</p>}
+
+                    {error && (
+                        <p className="text-red-500 text-xs">
+                            {error}
+                        </p>
+                    )}
+
                     <div className="flex gap-2">
                         <button
                             onClick={onDone}
@@ -57,6 +85,7 @@ function PromptNotificationEmail({ onDone }: { onDone: () => void }) {
                         >
                             Skip
                         </button>
+
                         <button
                             onClick={sendCode}
                             disabled={loading || email.trim().length === 0}
@@ -71,7 +100,13 @@ function PromptNotificationEmail({ onDone }: { onDone: () => void }) {
             {step === "code" && (
                 <>
                     <p className="text-sm text-gray-400">
-                        Enter the code sent to <span className="text-white break-all">{email}</span>.
+                        Enter the code sent to{" "}
+
+                        <span className="text-white break-all">
+                            {email}
+                        </span>
+
+                        .
                     </p>
 
                     <input
@@ -120,7 +155,19 @@ function PromptNotificationEmail({ onDone }: { onDone: () => void }) {
 }
 
 
-export default function InventoryClient({ isSteamLinked, hasNotificationEmail, inventory, lastRefresh, inventoryToken }: { isSteamLinked: boolean, hasNotificationEmail: boolean, inventory: SteamItem[], lastRefresh: Date, inventoryToken: string }) {
+export default function InventoryClient({
+    isSteamLinked,
+    hasNotificationEmail,
+    inventory,
+    lastRefresh,
+    inventoryToken,
+}: {
+    isSteamLinked: boolean,
+    hasNotificationEmail: boolean,
+    inventory: SteamItem[],
+    lastRefresh: Date,
+    inventoryToken: string,
+}) {
     const router = useRouter()
     const [showEmailPrompt, setShowEmailPrompt] = useState(false)
     const [selling, setSelling] = useState<SteamItem[]>([])
@@ -128,7 +175,7 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
     const [gameFilter, setGameFilter] = useState<"CS2" | "Dota2" | "Rust" | "TF2">("CS2")
     const [lastRefreshDisplay, setLastRefreshDisplay] = useState(() => timeAgo(lastRefresh))
 
-    // null = still loading, number = resolved (0 means not found / too cheap)
+    // Null and 0 differ, so an item with no price isn't mistaken for one still loading.
     const [livePrices, setLivePrices] = useState<Map<string, number | null>>(() => {
         const map = new Map<string, number | null>()
 
@@ -146,7 +193,10 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
     useEffect(() => {
         setLastRefreshDisplay(timeAgo(lastRefresh))
 
-        const id = setInterval(() => setLastRefreshDisplay(timeAgo(lastRefresh)), 10000)
+        const id = setInterval(() => {
+            setLastRefreshDisplay(timeAgo(lastRefresh))
+        }, 10000)
+
         return () => clearInterval(id)
     }, [lastRefresh])
 
@@ -168,30 +218,39 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
 
 
     useEffect(() => {
+        const unpriced: SteamItem[] = []
         const seen = new Set<string>()
 
-        const unpriced = inventory.filter(i => {
-            if (i.price > 0 || seen.has(i.market_name)) return false
-
-            seen.add(i.market_name)
-
-            return true
-        })
+        for (const item of inventory) {
+            if (item.price > 0 || seen.has(item.market_name)) {
+                continue
+            }
 
 
-        // Collect unique sticker names from items that have stickers
+            seen.add(item.market_name)
+            unpriced.push(item)
+        }
+
+
         const stickerSeen = new Set<string>()
-        const stickerItems: { market_name: string; market_hash_name: string; game: string }[] = []
+        const stickerItems: PriceRequest[] = []
 
         for (const item of inventory) {
-            if (!item.stickers) continue
+            if (!item.stickers) {
+                continue
+            }
+
 
             for (const s of item.stickers) {
                 const name = `Sticker | ${s.name}`
 
                 if (!stickerSeen.has(name)) {
                     stickerSeen.add(name)
-                    stickerItems.push({ market_name: name, market_hash_name: name, game: 'CS2' })
+                    stickerItems.push({
+                        market_name: name,
+                        market_hash_name: name,
+                        game: 'CS2',
+                    })
                 }
             }
         }
@@ -201,6 +260,14 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
             return
         }
 
+
+        const unpricedItems: PriceRequest[] = unpriced.map(i => ({
+            market_name: i.market_name,
+            market_hash_name: i.market_hash_name,
+            game: i.game,
+        }))
+        const items = [...unpricedItems, ...stickerItems]
+
         const controller = new AbortController()
 
         ;(async () => {
@@ -208,23 +275,21 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
                 const res = await fetch('/api/prices', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ items: [
-                        ...unpriced.map(i => ({ market_name: i.market_name, market_hash_name: i.market_hash_name, game: i.game })),
-                        ...stickerItems,
-                    ] }),
-                    signal: controller.signal
+                    body: JSON.stringify({ items }),
+                    signal: controller.signal,
                 })
 
+                if (!res.body) {
+                    return
+                }
 
-                if (!res.body) return
 
                 const reader = res.body.getReader()
                 const decoder = new TextDecoder()
                 let buffer = ''
 
-                
-                // Batch streamed prices into one state flush per interval — a setState
-                // per NDJSON line re-renders the whole grid for every single item.
+
+                // Prices are flushed in batches, since a state update per line re-renders the whole grid.
                 let pending = new Map<string, number>()
                 let flushTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -234,16 +299,22 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
                         flushTimer = null
                     }
 
-                    if (pending.size === 0) return
+
+                    if (pending.size === 0) {
+                        return
+                    }
+
 
                     const updates = pending
                     pending = new Map()
 
                     setLivePrices(prev => {
                         const next = new Map(prev)
+
                         for (const [name, price] of updates) {
                             next.set(name, price)
                         }
+
 
                         return next
                     })
@@ -252,31 +323,48 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
                 try {
                     while (true) {
                         const { done, value } = await reader.read()
-                        if (done) break
+
+                        if (done) {
+                            break
+                        }
+
+
                         buffer += decoder.decode(value, { stream: true })
                         const lines = buffer.split('\n')
                         buffer = lines.pop()!
+
                         for (const line of lines) {
-                            if (!line.trim()) continue
-                            // Per-line guard: one malformed line shouldn't drop the batch
-                            // or kill the rest of the stream.
+                            if (!line.trim()) {
+                                continue
+                            }
+
+
+                            // One malformed line shouldn't drop the batch or end the stream.
                             try {
                                 const { market_name, price } = JSON.parse(line)
                                 pending.set(market_name, price)
-                            } catch { }
+                            }
+                            catch { }
                         }
-                        // Timer (not chunk-arrival) drives the flush, so prices parsed just
-                        // before a slow upstream item don't sit unrendered until the next chunk.
+
+
+                        // A timer drives the flush, so prices parsed before a slow item still render.
                         if (pending.size > 0 && !flushTimer) {
                             flushTimer = setTimeout(flush, 150)
                         }
                     }
-                } finally {
+                }
+                finally {
                     flush()
                 }
-            } catch (e) {
-                if ((e as Error).name === 'AbortError') return
-                // On error, leave prices as null — items stay visible rather than disappearing
+            }
+            catch (e) {
+                if ((e as Error).name === 'AbortError') {
+                    return
+                }
+
+
+                // Prices are left null on any other error, so items stay visible.
             }
         })()
 
@@ -285,7 +373,23 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
 
 
     function onTradeUrlLinked() {
-        if (!hasNotificationEmail) setShowEmailPrompt(true)
+        if (!hasNotificationEmail) {
+            setShowEmailPrompt(true)
+        }
+
+
+        router.refresh()
+    }
+
+
+    function onListed(ids: string[]) {
+        setListedAssetIds(prev => new Set([...prev, ...ids]))
+
+        if (!hasNotificationEmail) {
+            setShowEmailPrompt(true)
+        }
+
+
         router.refresh()
     }
 
@@ -295,22 +399,23 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
     const stackedInventory = (() => {
         const result: (SteamItem & { quantity: number })[] = []
         const commodityMap = new Map<string, SteamItem & { quantity: number }>()
+        const priceOf = (name: string) => livePrices.get(name) ?? 0
 
         for (const item of filtered) {
             const priceState = livePrices.get(item.market_name)
 
             const basePrice = priceState ?? 0
-            const price = basePrice + stickerValue(item.stickers, name => livePrices.get(name) ?? 0)
+            const price = basePrice + stickerValue(item.stickers, priceOf)
 
 
-            // Hide junk: items worth <= $0.10, but only once every price component has
-            // resolved (base + each sticker). Unresolved components keep the item visible,
-            // so sticker value arriving late (or a failed stream) can't hide a skin whose stickers carry its real value.
-            const stickersResolved = !item.stickers
-                || item.stickers.every(s => typeof livePrices.get(`Sticker | ${s.name}`) === "number")
+            // Waits for every price first, so an item is never hidden on a partial total.
+            const stickerNames = (item.stickers ?? []).map(s => `Sticker | ${s.name}`)
+            const stickersResolved = stickerNames.every(name => typeof livePrices.get(name) === "number")
+
             if (typeof priceState === "number" && stickersResolved && price <= 0.10) {
                 continue
             }
+
 
             const itemWithPrice = { ...item, price }
 
@@ -325,11 +430,12 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
                     commodityMap.set(item.market_name, entry)
                     result.push(entry)
                 }
-            } 
+            }
             else {
                 result.push({ ...itemWithPrice, quantity: 1 })
             }
         }
+
 
         return result.sort((a, b) => b.price - a.price)
     })()
@@ -338,25 +444,33 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
     const totalValue = stackedInventory.reduce((sum, item) => {
         const priceState = livePrices.get(item.market_name)
 
-        if (priceState === null) return sum
+        if (priceState === null) {
+            return sum
+        }
+
 
         return sum + item.price * item.quantity
     }, 0)
 
-    
+
     return (
         <>
             {isSteamLinked && showEmailPrompt && (
                 <PromptNotificationEmail onDone={() => setShowEmailPrompt(false)} />
             )}
 
-            <LeftInventoryPanel gameFilter={gameFilter} setGameFilter={setGameFilter} />
+            <LeftInventoryPanel
+                gameFilter={gameFilter}
+                setGameFilter={setGameFilter}
+            />
 
-            <RightPanel selling={selling} setSelling={setSelling} onListed={(ids) => {
-                setListedAssetIds(prev => new Set([...prev, ...ids]))
-                if (!hasNotificationEmail) setShowEmailPrompt(true)
-                router.refresh()
-            }} livePrices={livePrices} inventoryToken={inventoryToken} />
+            <RightPanel
+                selling={selling}
+                setSelling={setSelling}
+                onListed={onListed}
+                livePrices={livePrices}
+                inventoryToken={inventoryToken}
+            />
 
 
             {/* Main column */}
@@ -421,7 +535,10 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
                                     const currentAmount = selling.filter(i => i.market_name === item.market_name).length
                                     const remaining = item.quantity - currentAmount
 
-                                    if (remaining <= 0) return
+                                    if (remaining <= 0) {
+                                        return
+                                    }
+
 
                                     return (
                                         <InventoryItemCard
@@ -442,4 +559,3 @@ export default function InventoryClient({ isSteamLinked, hasNotificationEmail, i
         </>
     )
 }
-

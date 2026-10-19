@@ -11,6 +11,7 @@ export async function GET() {
         return Response.json({ count: 0 })
     }
 
+
     const count = await prisma.purchase.count({
         where: {
             status: { in: ["pending", "holding"] },

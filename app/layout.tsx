@@ -13,7 +13,6 @@ const inter = Inter({
     variable: '--font-inter',
 })
 
-// Display font for headings, prices and the logo
 const jakarta = Plus_Jakarta_Sans({
     subsets: ['latin'],
     variable: '--font-jakarta',
@@ -29,7 +28,12 @@ export const viewport: Viewport = {
     themeColor: '#171A21',
 }
 
-const OG_IMAGE = { url: '/logo.png', width: 512, height: 512, alt: 'SkinSlinger' }
+const OG_IMAGE = {
+    url: '/logo.png',
+    width: 512,
+    height: 512,
+    alt: 'SkinSlinger',
+}
 
 export const metadata: Metadata = {
     metadataBase: new URL(getBaseUrl()),
@@ -74,6 +78,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <body className="h-dvh mx-auto flex flex-col overflow-hidden">
                 <Providers>
                     <TopNav />
+
                     {children}
                 </Providers>
 

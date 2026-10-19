@@ -15,7 +15,10 @@ export const metadata: Metadata = {
 export default async function ListingsPage() {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) redirect("/")
+    if (!session?.user?.id) {
+        redirect("/")
+    }
+
 
     const activePurchases = await prisma.purchase.findMany({
         where: { sellerId: session.user.id, status: "pending" },
@@ -28,7 +31,8 @@ export default async function ListingsPage() {
         orderBy: { price: "desc" },
     })
 
-    const nonCommodityAssetIds = rows.filter(l => !l.commodity).map(l => l.assetId)
+    const nonCommodities = rows.filter(l => !l.commodity)
+    const nonCommodityAssetIds = nonCommodities.map(l => l.assetId)
     const floatRows = nonCommodityAssetIds.length > 0
         ? await prisma.item_float.findMany({
             where: { assetId: { in: nonCommodityAssetIds } },
@@ -37,24 +41,23 @@ export default async function ListingsPage() {
         : []
     const floatMap = new Map(floatRows.map(f => [f.assetId, f]))
 
-    const listings = rows
-        .map(l => {
-            if (lockedAssetIds.has(l.assetId)) return null
-            const float = floatMap.get(l.assetId)
-            return {
-                id: l.id,
-                assetId: l.assetId,
-                marketName: l.marketName,
-                price: l.price,
-                game: l.game,
-                icon: l.icon,
-                hexColor: l.hexColor,
-                commodity: l.commodity,
-                floatValue: float?.floatValue ?? null,
-                paintSeed: float?.paintSeed ?? null,
-            }
-        })
-        .filter((l): l is NonNullable<typeof l> => l !== null)
+    const unlocked = rows.filter(l => !lockedAssetIds.has(l.assetId))
+    const listings = unlocked.map(l => {
+        const float = floatMap.get(l.assetId)
+
+        return {
+            id: l.id,
+            assetId: l.assetId,
+            marketName: l.marketName,
+            price: l.price,
+            game: l.game,
+            icon: l.icon,
+            hexColor: l.hexColor,
+            commodity: l.commodity,
+            floatValue: float?.floatValue ?? null,
+            paintSeed: float?.paintSeed ?? null,
+        }
+    })
 
     return <ListingsClient listings={listings} />
 }

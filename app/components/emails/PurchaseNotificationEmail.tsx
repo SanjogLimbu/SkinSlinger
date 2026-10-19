@@ -38,15 +38,26 @@ export function PurchaseNotificationEmail({ buyerName, buyerTradeUrl, items }: P
                     </p>
 
                     {items.map((item, i) => (
-                        <div key={i} style={{ backgroundColor: '#363636', borderRadius: '4px', padding: '12px 16px', marginBottom: '8px' }}>
-                            <p style={{ margin: '0 0 4px', color: '#ffffff', fontSize: '14px' }}>{item.marketName}</p>
-                            <p style={{ margin: 0, color: '#0088be', fontSize: '14px', fontWeight: 'bold' }}>${item.price.toFixed(2)}</p>
+                        <div
+                            key={i}
+                            style={{ backgroundColor: '#363636', borderRadius: '4px', padding: '12px 16px', marginBottom: '8px' }}
+                        >
+                            <p style={{ margin: '0 0 4px', color: '#ffffff', fontSize: '14px' }}>
+                                {item.marketName}
+                            </p>
+
+                            <p style={{ margin: 0, color: '#0088be', fontSize: '14px', fontWeight: 'bold' }}>
+                                ${item.price.toFixed(2)}
+                            </p>
                         </div>
                     ))}
 
                     <div style={{ padding: '12px 0', borderTop: '1px solid #444' }}>
                         <span style={{ color: '#aaaaaa', fontSize: '14px' }}>Total: </span>
-                        <span style={{ color: '#ffffff', fontSize: '14px', fontWeight: 'bold' }}>${total.toFixed(2)}</span>
+
+                        <span style={{ color: '#ffffff', fontSize: '14px', fontWeight: 'bold' }}>
+                            ${total.toFixed(2)}
+                        </span>
                     </div>
 
                     <div style={{ backgroundColor: '#1a3a4a', borderRadius: '4px', padding: '16px', margin: '24px 0' }}>
@@ -54,7 +65,10 @@ export function PurchaseNotificationEmail({ buyerName, buyerTradeUrl, items }: P
                             Trade URL
                         </p>
 
-                        <a href="https://skinslinger.com/orders" style={{ color: '#0088be', fontSize: '13px', wordBreak: 'break-all' }}>
+                        <a
+                            href="https://skinslinger.com/orders"
+                            style={{ color: '#0088be', fontSize: '13px', wordBreak: 'break-all' }}
+                        >
                             {buyerTradeUrl || 'No trade URL on file'}
                         </a>
                     </div>

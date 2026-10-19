@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+//
+
 export const metadata: Metadata = {
     title: 'Trade Helper Extension Privacy Policy',
 }
@@ -27,18 +29,30 @@ const sections = [
     },
 ]
 
+//
+
 export default function ExtensionPrivacyPage() {
     return (
         <div className="overflow-y-auto h-full w-full no-scrollbar">
             <div className="w-full max-w-2xl mx-auto px-4 pt-24 pb-20">
-                <h1 className="text-3xl font-bold mb-2">Trade Helper Extension Privacy Policy</h1>
-                <p className="text-gray-500 text-sm mb-10">Last updated: July 2026</p>
+                <h1 className="text-3xl font-bold mb-2">
+                    Trade Helper Extension Privacy Policy
+                </h1>
+
+                <p className="text-gray-500 text-sm mb-10">
+                    Last updated: July 2026
+                </p>
 
                 <div className="flex flex-col gap-6">
                     {sections.map(({ title, body }) => (
                         <div key={title}>
-                            <h2 className="font-semibold text-sm mb-1">{title}</h2>
-                            <p className="text-gray-400 text-sm leading-relaxed">{body}</p>
+                            <h2 className="font-semibold text-sm mb-1">
+                                {title}
+                            </h2>
+
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                {body}
+                            </p>
                         </div>
                     ))}
                 </div>

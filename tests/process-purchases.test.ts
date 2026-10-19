@@ -8,14 +8,18 @@ import { sendTradeCompleteEmails, sendReversalRefundEmails } from "@/lib/tradeNo
 const prisma = vi.hoisted(() => ({
     purchase: { findMany: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
     item_float: { findMany: vi.fn() },
-    item_listing: { create: vi.fn() },
+    item_listing: { createMany: vi.fn() },
     user: { update: vi.fn() },
     $transaction: vi.fn(),
 }))
 
 vi.mock("@/lib/db", () => ({ prisma }))
 vi.mock("@/lib/steam", () => ({ verifyBuyerHasItem: vi.fn() }))
-vi.mock("@/lib/tradeNotifications", () => ({ sendTradeCompleteEmails: vi.fn(), sendReversalRefundEmails: vi.fn() }))
+
+vi.mock("@/lib/tradeNotifications", () => ({
+    sendTradeCompleteEmails: vi.fn(),
+    sendReversalRefundEmails: vi.fn(),
+}))
 
 //
 
@@ -26,7 +30,7 @@ beforeEach(() => {
     vi.resetAllMocks()
     vi.stubEnv("CRON_SECRET", "test-secret")
 
-    prisma.$transaction.mockImplementation(fn => fn(prisma))
+    prisma.$transaction.mockImplementation((fn) => fn(prisma))
     prisma.item_float.findMany.mockResolvedValue([])
     prisma.purchase.updateMany.mockResolvedValue({ count: 1 })
     prisma.purchase.deleteMany.mockResolvedValue({ count: 1 })
@@ -43,9 +47,23 @@ function daysAgo(days: number) {
 
 function purchase(overrides: object = {}) {
     return {
-        id: "p1", status: "pending", price: 10, assetId: "CS2:1", marketName: SKIN, game: "CS2", icon: "icon.png", hexColor: "eb4b4b", commodity: false,
-        buyerId: "buyer", sellerId: "seller", buyerTradeUrl: null, buyerPreCount: null,
-        createdAt: daysAgo(1), deliveredAt: null, tradeOfferSentAt: null, tradeOfferId: null,
+        id: "p1",
+        status: "pending",
+        price: 10,
+        assetId: "CS2:1",
+        marketName: SKIN,
+        game: "CS2",
+        icon: "icon.png",
+        hexColor: "eb4b4b",
+        commodity: false,
+        buyerId: "buyer",
+        sellerId: "seller",
+        buyerTradeUrl: null,
+        buyerPreCount: null,
+        createdAt: daysAgo(1),
+        deliveredAt: null,
+        tradeOfferSentAt: null,
+        tradeOfferId: null,
         buyer: { steam_id: "76561198000000000", steam_trade_url: null, notificationEmail: "buyer@example.com" },
         seller: { notificationEmail: "seller@example.com" },
         ...overrides,
@@ -56,7 +74,11 @@ function purchase(overrides: object = {}) {
 async function run(...purchases: object[]) {
     prisma.purchase.findMany.mockResolvedValue(purchases)
 
-    const response = await GET(new Request("http://localhost/api/cron/process-purchases", { headers: { authorization: "Bearer test-secret" } }))
+    const request = new Request("http://localhost/api/cron/process-purchases", {
+        headers: { authorization: "Bearer test-secret" },
+    })
+
+    const response = await GET(request)
 
     return response.json()
 }
@@ -86,9 +108,23 @@ describe("process-purchases cron", () => {
 
         const summary = await run(purchase({ status: "holding", deliveredAt: daysAgo(9) }))
 
-        expect(prisma.purchase.updateMany).toHaveBeenCalledWith({ where: { id: "p1", status: "holding" }, data: { status: "completed" } })
-        expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "seller" }, data: { cash: { increment: 10 } } })
-        expect(sendTradeCompleteEmails).toHaveBeenCalledWith([{ marketName: SKIN, price: 10, buyerEmail: "buyer@example.com", sellerEmail: "seller@example.com" }])
+        expect(prisma.purchase.updateMany).toHaveBeenCalledWith({
+            where: { id: "p1", status: "holding" },
+            data: { status: "completed" },
+        })
+
+        expect(prisma.user.update).toHaveBeenCalledWith({
+            where: { id: "seller" },
+            data: { cash: { increment: 10 } },
+        })
+
+        expect(sendTradeCompleteEmails).toHaveBeenCalledWith([{
+            marketName: SKIN,
+            price: 10,
+            buyerEmail: "buyer@example.com",
+            sellerEmail: "seller@example.com",
+        }])
+
         expect(summary.completed).toBe(1)
     })
 
@@ -98,9 +134,22 @@ describe("process-purchases cron", () => {
 
         const summary = await run(purchase({ status: "holding", deliveredAt: daysAgo(9) }))
 
-        expect(prisma.purchase.updateMany).toHaveBeenCalledWith({ where: { id: "p1", status: "holding" }, data: { status: "reversed" } })
-        expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "buyer" }, data: { cash: { increment: 10 } } })
-        expect(sendReversalRefundEmails).toHaveBeenCalledWith([{ marketName: SKIN, price: 10, buyerEmail: "buyer@example.com" }])
+        expect(prisma.purchase.updateMany).toHaveBeenCalledWith({
+            where: { id: "p1", status: "holding" },
+            data: { status: "reversed" },
+        })
+
+        expect(prisma.user.update).toHaveBeenCalledWith({
+            where: { id: "buyer" },
+            data: { cash: { increment: 10 } },
+        })
+
+        expect(sendReversalRefundEmails).toHaveBeenCalledWith([{
+            marketName: SKIN,
+            price: 10,
+            buyerEmail: "buyer@example.com",
+        }])
+
         expect(summary.reversed).toBe(1)
     })
 
@@ -121,7 +170,11 @@ describe("process-purchases cron", () => {
 
         const summary = await run(purchase())
 
-        expect(prisma.purchase.updateMany).toHaveBeenCalledWith({ where: { id: "p1", status: "pending" }, data: { status: "holding", deliveredAt: expect.any(Date) } })
+        expect(prisma.purchase.updateMany).toHaveBeenCalledWith({
+            where: { id: "p1", status: "pending" },
+            data: { status: "holding", deliveredAt: expect.any(Date) },
+        })
+
         expect(prisma.user.update).not.toHaveBeenCalled()
         expect(summary.delivered).toBe(1)
     })
@@ -133,10 +186,26 @@ describe("process-purchases cron", () => {
         const summary = await run(purchase({ createdAt: daysAgo(4) }))
 
         expect(prisma.purchase.deleteMany).toHaveBeenCalledWith({ where: { id: "p1", status: "pending" } })
-        expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: "buyer" }, data: { cash: { increment: 10 } } })
-        expect(prisma.item_listing.create).toHaveBeenCalledWith({
-            data: { assetId: "CS2:1", marketName: SKIN, price: 10, game: "CS2", icon: "icon.png", hexColor: "eb4b4b", commodity: false, userId: "seller" },
+
+        expect(prisma.user.update).toHaveBeenCalledWith({
+            where: { id: "buyer" },
+            data: { cash: { increment: 10 } },
         })
+
+        expect(prisma.item_listing.createMany).toHaveBeenCalledWith({
+            data: [{
+                assetId: "CS2:1",
+                marketName: SKIN,
+                price: 10,
+                game: "CS2",
+                icon: "icon.png",
+                hexColor: "eb4b4b",
+                commodity: false,
+                userId: "seller",
+            }],
+            skipDuplicates: true,
+        })
+
         expect(summary.autoCancelled).toBe(1)
     })
 
@@ -161,7 +230,10 @@ describe("process-purchases cron", () => {
     it("A Steam error moves no money, so the order is retried next run.", async () => {
         vi.mocked(verifyBuyerHasItem).mockResolvedValue("error")
 
-        await run(purchase({ status: "holding", deliveredAt: daysAgo(9) }), purchase({ id: "p2", createdAt: daysAgo(4) }))
+        await run(
+            purchase({ status: "holding", deliveredAt: daysAgo(9) }),
+            purchase({ id: "p2", createdAt: daysAgo(4) }),
+        )
 
         expect(prisma.purchase.updateMany).not.toHaveBeenCalled()
         expect(prisma.purchase.deleteMany).not.toHaveBeenCalled()
@@ -170,10 +242,28 @@ describe("process-purchases cron", () => {
 
 
     it("An order with a price of zero or less never moves money.", async () => {
-        await run(purchase({ status: "holding", deliveredAt: daysAgo(9), price: -5 }), purchase({ id: "p2", price: 0 }))
+        await run(
+            purchase({ status: "holding", deliveredAt: daysAgo(9), price: -5 }),
+            purchase({ id: "p2", price: 0 }),
+        )
 
         expect(verifyBuyerHasItem).not.toHaveBeenCalled()
         expect(prisma.user.update).not.toHaveBeenCalled()
+    })
+
+
+    it("One order that fails doesn't stop the rest from being processed.", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {})
+        vi.mocked(verifyBuyerHasItem).mockResolvedValue("no_item")
+        prisma.user.update.mockRejectedValueOnce(new Error("database down"))
+
+        const response = await run(
+            purchase({ id: "p1", createdAt: daysAgo(4) }),
+            purchase({ id: "p2", createdAt: daysAgo(4) }),
+        )
+
+        expect(response.autoCancelled).toBe(1)
+        expect(prisma.purchase.deleteMany).toHaveBeenCalledWith({ where: { id: "p2", status: "pending" } })
     })
 
 })

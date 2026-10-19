@@ -25,7 +25,11 @@ export default function DepositAmountView({
 
     return (
         <div className="w-full max-w-md flex flex-col gap-4">
-            <PageHeader eyebrow="Deposit" title="Add funds" onBack={onBack} />
+            <PageHeader
+                eyebrow="Deposit"
+                title="Add funds"
+                onBack={onBack}
+            />
 
             <form onSubmit={onSubmit} className="bg-secondary rounded-sm frame-shadow p-5 flex flex-col gap-5">
                 <div className="flex flex-col gap-2">
@@ -33,7 +37,11 @@ export default function DepositAmountView({
                         Amount
                     </label>
 
-                    <AmountInput id="deposit-amount" value={amountInput} onChange={onAmountChange} />
+                    <AmountInput
+                        id="deposit-amount"
+                        value={amountInput}
+                        onChange={onAmountChange}
+                    />
 
                     <div className="grid grid-cols-4 gap-2">
                         {PRESETS.map(p => (
@@ -51,16 +59,29 @@ export default function DepositAmountView({
 
                 <div className="bg-primary rounded-sm p-4 flex flex-col gap-2.5">
                     <DetailRow label="Pay with" value="USDC" />
+
                     <DetailRow label="Network" value="Polygon (PoS)" />
+
                     <DetailRow label="Deposit fee" value="Free" />
-                    <DetailRow label="You'll receive" value={`$${amount.toFixed(2)}`} strong />
+
+                    <DetailRow
+                        label="You'll receive"
+                        value={`$${amount.toFixed(2)}`}
+                        strong
+                    />
                 </div>
 
                 {error && (
-                    <p className="text-sm text-negative">{error}</p>
+                    <p className="text-sm text-negative">
+                        {error}
+                    </p>
                 )}
 
-                <button type="submit" disabled={loading} className="bg-special button h-11 rounded-sm w-full disabled:opacity-60">
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-special button h-11 rounded-sm w-full disabled:opacity-60"
+                >
                     {loading ? "Generating address..." : "Continue"}
                 </button>
 

@@ -3,9 +3,11 @@ type PriceLookup = (marketName: string) => number
 
 //
 
-const MAX_LISTING_MARKUP = 3 // Highest listing price allowed, as a multiple of the item's market value
-const MIN_LISTING_FRACTION = 0.1 // Lowest listing price allowed, as a fraction of the item's market price (0.1 = -90%)
-const STICKER_VALUE_SHARE = 0.15 // Share of a sticker's market price that it adds to an item's value
+const MAX_LISTING_MARKUP = 3
+
+const MIN_LISTING_FRACTION = 0.1
+
+const STICKER_VALUE_SHARE = 0.15
 
 //
 
@@ -25,9 +27,14 @@ export function stickerMarketName(name: string): string {
 }
 
 
-// Extra value an item gets from its stickers, scaled down by how scraped each one is
-export function stickerValue(stickers: Sticker[] | null | undefined, priceOf: PriceLookup): number {
-    if (!stickers) return 0
+export function stickerValue(
+    stickers: Sticker[] | null | undefined,
+    priceOf: PriceLookup,
+): number {
+    if (!stickers) {
+        return 0
+    }
+
 
     let total = 0
 
@@ -43,9 +50,15 @@ export function stickerValue(stickers: Sticker[] | null | undefined, priceOf: Pr
 }
 
 
-// Highest price an item can be listed for, or null when it has no market price to compare against
-export function maxListingPrice(marketPrice: number, stickers: Sticker[] | null | undefined, priceOf: PriceLookup): number | null {
-    if (marketPrice <= 0) return null
+export function maxListingPrice(
+    marketPrice: number,
+    stickers: Sticker[] | null | undefined,
+    priceOf: PriceLookup,
+): number | null {
+    if (marketPrice <= 0) {
+        return null
+    }
+
 
     const itemValue = marketPrice + stickerValue(stickers, priceOf)
 
@@ -53,12 +66,13 @@ export function maxListingPrice(marketPrice: number, stickers: Sticker[] | null 
 }
 
 
-// Lowest price an item can be listed for (never below 1 cent), or null when it has no market price
 export function minListingPrice(marketPrice: number): number | null {
-    if (marketPrice <= 0) return null
+    if (marketPrice <= 0) {
+        return null
+    }
+
 
     const minPrice = roundUpToCent(marketPrice * MIN_LISTING_FRACTION)
-    
+
     return Math.max(0.01, minPrice)
 }
-

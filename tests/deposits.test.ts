@@ -8,9 +8,22 @@ import { sweepUSDC } from "@/lib/crypto/sweep"
 const { prisma, client } = vi.hoisted(() => ({
     prisma: {
         deposit_counter: { upsert: vi.fn(), update: vi.fn() },
-        crypto_deposit: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn(), delete: vi.fn() },
+        crypto_deposit: {
+            create: vi.fn(),
+            findUnique: vi.fn(),
+            findMany: vi.fn(),
+            update: vi.fn(),
+            updateMany: vi.fn(),
+            delete: vi.fn(),
+        },
     },
-    client: { getBlockNumber: vi.fn(), multicall: vi.fn(), getTransactionReceipt: vi.fn(), readContract: vi.fn(), getLogs: vi.fn() },
+    client: {
+        getBlockNumber: vi.fn(),
+        multicall: vi.fn(),
+        getTransactionReceipt: vi.fn(),
+        readContract: vi.fn(),
+        getLogs: vi.fn(),
+    },
 }))
 
 vi.mock("@/lib/db", () => ({ prisma }))
@@ -19,12 +32,23 @@ vi.mock("@/lib/crypto/sweep", () => ({ sweepUSDC: vi.fn() }))
 
 //
 
-type Deposit = { id: string, userId: string, address: string, index: number, amountUsdc: number, status: string, txHash: string | null, expiresAt: Date }
+type Deposit = {
+    id: string,
+    userId: string,
+    address: string,
+    index: number,
+    amountUsdc: number,
+    status: string,
+    txHash: string | null,
+    expiresAt: Date,
+}
+
 type StatusFilter = string | { in: string[] }
+type DepositKey = { id?: string, address?: string }
 
 const MINUTE = 60 * 1000
 
-// An in-memory crypto_deposit table, so a status written by one query is seen by the next
+// An in-memory crypto_deposit table, so a status written by one query is seen by the next.
 let deposits: Deposit[] = []
 
 beforeEach(() => {
@@ -32,15 +56,21 @@ beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => {})
 
     deposits = []
-    prisma.crypto_deposit.findMany.mockImplementation(async ({ where }: { where: { status: StatusFilter } }) =>
-        deposits.filter(d => typeof where.status === "string" ? d.status === where.status : where.status.in.includes(d.status))
-    )
-    prisma.crypto_deposit.findUnique.mockImplementation(async ({ where }: { where: { address: string } }) =>
-        deposits.find(d => d.address === where.address) ?? null
-    )
-    prisma.crypto_deposit.update.mockImplementation(async ({ where, data }: { where: { id?: string, address?: string }, data: Partial<Deposit> }) =>
-        Object.assign(deposits.find(d => d.id === where.id || d.address === where.address)!, data)
-    )
+
+    prisma.crypto_deposit.findMany.mockImplementation(async ({ where }: { where: { status: StatusFilter } }) => {
+        return deposits.filter(d => matchesStatus(d.status, where.status))
+    })
+
+    prisma.crypto_deposit.findUnique.mockImplementation(async ({ where }: { where: { address: string } }) => {
+        return deposits.find(d => d.address === where.address) ?? null
+    })
+
+    prisma.crypto_deposit.update.mockImplementation(async ({ where, data }: { where: DepositKey, data: Partial<Deposit> }) => {
+        const row = deposits.find(d => d.id === where.id || d.address === where.address)!
+
+        return Object.assign(row, data)
+    })
+
     prisma.deposit_counter.upsert.mockResolvedValue({ value: 1, lastBlock: 900n })
 
     vi.mocked(getPublicClient).mockReturnValue(client as never)
@@ -53,12 +83,32 @@ afterEach(() => vi.useRealTimers())
 
 //
 
-function deposit(overrides: Partial<Deposit> = {}): Deposit {
-    return { id: "d1", userId: "user", address: "0xDeposit", index: 7, amountUsdc: 50, status: "pending", txHash: null, expiresAt: new Date(Date.now() + 10 * MINUTE), ...overrides }
+function matchesStatus(status: string, filter: StatusFilter) {
+    if (typeof filter === "string") {
+        return status === filter
+    }
+
+
+    return filter.in.includes(status)
 }
 
 
-// A USDC transfer to the deposit address; 1 USDC is 1,000,000 units
+function deposit(overrides: Partial<Deposit> = {}): Deposit {
+    return {
+        id: "d1",
+        userId: "user",
+        address: "0xDeposit",
+        index: 7,
+        amountUsdc: 50,
+        status: "pending",
+        txHash: null,
+        expiresAt: new Date(Date.now() + 10 * MINUTE),
+        ...overrides,
+    }
+}
+
+
+// A USDC transfer to the deposit address, where 1 USDC is 1,000,000 units.
 function transfer(value: bigint) {
     return { args: { to: "0xdeposit", value }, transactionHash: "0xtransfer" }
 }
@@ -82,7 +132,15 @@ describe("createDeposit", () => {
 
         expect(await createDeposit("user", 25)).toEqual({ address: "0xdeposit42", amount: 25, expiresAt })
         expect(getDepositAddress).toHaveBeenCalledWith(42)
-        expect(prisma.crypto_deposit.create).toHaveBeenCalledWith({ data: { userId: "user", address: "0xdeposit42", index: 42, amountUsdc: 25, expiresAt } })
+        expect(prisma.crypto_deposit.create).toHaveBeenCalledWith({
+            data: {
+                userId: "user",
+                address: "0xdeposit42",
+                index: 42,
+                amountUsdc: 25,
+                expiresAt,
+            },
+        })
     })
 
 })
@@ -108,7 +166,11 @@ describe("getDepositStatus", () => {
     })
 
 
-    it.each([["pending", "waiting"], ["confirmed", "confirming"], ["swept", "finished"]])("A %s deposit is shown as %s.", async (status, shown) => {
+    it.each([
+        ["pending", "waiting"],
+        ["confirmed", "confirming"],
+        ["swept", "finished"],
+    ])("A %s deposit is shown as %s.", async (status, shown) => {
         deposits = [deposit({ status })]
 
         expect(await getDepositStatus("0xDeposit", "user")).toBe(shown)

@@ -25,7 +25,13 @@ export type ListingCard = {
     sellerId: string,
     floatValue: number | null,
     paintSeed: number | null,
-    stickers: { stickerId: number; slot: number; name: string; image: string; wear: number | null }[] | null,
+    stickers: {
+        stickerId: number,
+        slot: number,
+        name: string,
+        image: string,
+        wear: number | null,
+    }[] | null,
 }
 
 export type DisplayCard = ListingCard & { quantity: number }
@@ -41,24 +47,26 @@ type Filters = {
     rarity: string | null,
 }
 
+const FILTER_KEYS = ["search", "minPrice", "maxPrice", "wear", "minFloat", "maxFloat", "type", "rarity"] as const
+
 //
 
 function hasActiveFilters(f: Filters): boolean {
-    return !!(f.search || f.minPrice || f.maxPrice || f.wear || f.minFloat || f.maxFloat || f.type || f.rarity)
+    return FILTER_KEYS.some(key => f[key])
 }
 
 
 function filterParams(f: Filters): URLSearchParams {
     const p = new URLSearchParams()
 
-    if (f.search) p.set("search", f.search)
-    if (f.minPrice) p.set("minPrice", f.minPrice)
-    if (f.maxPrice) p.set("maxPrice", f.maxPrice)
-    if (f.wear) p.set("wear", f.wear)
-    if (f.minFloat) p.set("minFloat", f.minFloat)
-    if (f.maxFloat) p.set("maxFloat", f.maxFloat)
-    if (f.type) p.set("type", f.type)
-    if (f.rarity) p.set("rarity", f.rarity)
+    for (const key of FILTER_KEYS) {
+        const value = f[key]
+
+        if (value) {
+            p.set(key, value)
+        }
+    }
+
 
     return p
 }
@@ -67,7 +75,10 @@ function filterParams(f: Filters): URLSearchParams {
 function buildQueryString(f: Filters, hasStickers: boolean): string {
     const p = filterParams(f)
 
-    if (!hasStickers) p.set("stickers", "0")
+    if (!hasStickers) {
+        p.set("stickers", "0")
+    }
+
 
     const s = p.toString()
 
@@ -97,12 +108,11 @@ export default function HomeClient(
     const router = useRouter()
 
 
-    // Game is fixed per page (/market/cs2 etc.) — switching games navigates and remounts.
+    // Fixed per page, since switching games navigates to another page.
     const game: GameFilter = initialGame ?? "all"
 
 
-    // All filters live in one object, initialised from the URL so filtered views
-    // survive refresh, can be shared, and work with the back button.
+    // Read from the URL so filtered views survive a refresh and can be shared.
     const [filters, setFilters] = useState<Filters>(() => ({
         search: searchParams.get("search") ?? "",
         minPrice: searchParams.get("minPrice") ?? "",
@@ -127,19 +137,26 @@ export default function HomeClient(
     const sentinelRef = useRef<HTMLDivElement>(null)
 
 
-    // ListingCard is memoized and may hold a stale onBuy closure, so handleBuy must
-    // read basket/session through refs to always act on current state.
+    // ListingCard is memoized and may hold a stale onBuy, so handleBuy reads state through refs.
     const basketRef = useRef(basket)
-    useEffect(() => { basketRef.current = basket; }, [basket])
+
+    useEffect(() => {
+        basketRef.current = basket
+    }, [basket])
 
     const sessionRef = useRef(session)
-    useEffect(() => { sessionRef.current = session; }, [session])
+
+    useEffect(() => {
+        sessionRef.current = session
+    }, [session])
 
 
-    // Single ref mirror so the infinite-scroll observer always reads current filters
-    // without being recreated on every keystroke.
+    // Lets the scroll observer read the current filters without being recreated.
     const filtersRef = useRef(filters)
-    useEffect(() => { filtersRef.current = filters; }, [filters])
+
+    useEffect(() => {
+        filtersRef.current = filters
+    }, [filters])
 
     const setFilter = useCallback(<K extends keyof Filters>(key: K, value: Filters[K]) => {
         setFilters(prev => ({ ...prev, [key]: value }))
@@ -147,15 +164,25 @@ export default function HomeClient(
 
 
     const load = useCallback(async (cur: string | null, reset: boolean) => {
-        if (loadingRef.current) return
+        if (loadingRef.current) {
+            return
+        }
+
 
         loadingRef.current = true
 
         try {
             const params = filterParams(filtersRef.current)
 
-            if (game !== "all") params.set("game", game)
-            if (cur) params.set("cursor", cur)
+            if (game !== "all") {
+                params.set("game", game)
+            }
+
+
+            if (cur) {
+                params.set("cursor", cur)
+            }
+
 
             const res = await fetch(`/api/listings?${params}`)
             const data = await res.json()
@@ -170,30 +197,33 @@ export default function HomeClient(
 
             setCursor(data.nextCursor)
             setHasMore(data.nextCursor !== null)
-        } 
+        }
         finally {
             loadingRef.current = false
         }
     }, [game])
 
 
-    // On filter change: debounce, sync the URL, and refetch from page one.
-    // On first mount the server has already rendered *unfiltered* data, so only
-    // fetch if the URL carried filters; otherwise skip.
+    // The server rendered unfiltered data, so the first render only fetches if the URL has filters.
     const isFirstRender = useRef(true)
 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false
 
-            if (hasActiveFilters(filters)) load(null, true)
+            if (hasActiveFilters(filters)) {
+                load(null, true)
+            }
+
 
             return
         }
 
-        
+
         const id = setTimeout(() => {
-            router.replace(`${pathname}${buildQueryString(filters, hasStickers)}`, { scroll: false })
+            const url = `${pathname}${buildQueryString(filters, hasStickers)}`
+
+            router.replace(url, { scroll: false })
             load(null, true)
         }, 300)
 
@@ -202,28 +232,34 @@ export default function HomeClient(
     }, [filters, load])
 
 
-    // hasStickers is a client-side display filter — sync it to the URL, no refetch.
+    // A display-only filter, so it syncs the URL without refetching.
     const isFirstStickerRender = useRef(true)
+
     useEffect(() => {
         if (isFirstStickerRender.current) {
             isFirstStickerRender.current = false
+
             return
         }
 
-        router.replace(`${pathname}${buildQueryString(filtersRef.current, hasStickers)}`, { scroll: false })
+
+        const url = `${pathname}${buildQueryString(filtersRef.current, hasStickers)}`
+
+        router.replace(url, { scroll: false })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hasStickers])
 
 
-    // Infinite scroll via IntersectionObserver. Re-registers whenever the cursor
-    // changes, so a still-visible sentinel immediately triggers the next page.
+    // Re-registers on a cursor change, so a still-visible sentinel loads the next page.
     useEffect(() => {
-        const observer = new IntersectionObserver(([entry]) => {
-            if (entry.isIntersecting && hasMore) {
-                load(cursor, false)
-            }
-        }, { threshold: 0.1 })
-
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting && hasMore) {
+                    load(cursor, false)
+                }
+            },
+            { threshold: 0.1 },
+        )
 
         if (sentinelRef.current) {
             observer.observe(sentinelRef.current)
@@ -263,20 +299,53 @@ export default function HomeClient(
             if (existing) {
                 const newQty = Math.min(existing.quantity + qty, existing.maxQuantity)
 
-                if (newQty === existing.quantity) return
+                if (newQty === existing.quantity) {
+                    return
+                }
 
-                updated = current.map(b =>
-                    b.marketName === item.marketName && b.commodity ? { ...b, quantity: newQty } : b
-                )
+
+                updated = current.map(b => {
+                    if (b.marketName === item.marketName && b.commodity) {
+                        return { ...b, quantity: newQty }
+                    }
+
+
+                    return b
+                })
             }
             else {
-                updated = [...current, { id: item.id, marketName: item.marketName, price: item.price, icon: item.icon, hexColor: item.hexColor, commodity: true, quantity: qty, maxQuantity: item.quantity } as BasketItem]
+                const added = {
+                    id: item.id,
+                    marketName: item.marketName,
+                    price: item.price,
+                    icon: item.icon,
+                    hexColor: item.hexColor,
+                    commodity: true,
+                    quantity: qty,
+                    maxQuantity: item.quantity,
+                } as BasketItem
+
+                updated = [...current, added]
             }
         }
         else {
-            if (current.find(b => b.id === item.id)) return
+            if (current.find(b => b.id === item.id)) {
+                return
+            }
 
-            updated = [...current, { id: item.id, marketName: item.marketName, price: item.price, icon: item.icon, hexColor: item.hexColor, commodity: false, quantity: 1, maxQuantity: 1 } as BasketItem]
+
+            const added = {
+                id: item.id,
+                marketName: item.marketName,
+                price: item.price,
+                icon: item.icon,
+                hexColor: item.hexColor,
+                commodity: false,
+                quantity: 1,
+                maxQuantity: 1,
+            } as BasketItem
+
+            updated = [...current, added]
         }
 
 
@@ -311,33 +380,43 @@ export default function HomeClient(
         }
 
 
-        // Subtract basket quantities; hide fully-basketed items
-        return result
-            .map(item => {
-                if (item.commodity) {
-                    const inBasket = basket.find(b => b.marketName === item.marketName && b.commodity)
+        const visible: DisplayCard[] = []
 
-                    return inBasket ? { ...item, quantity: item.quantity - inBasket.quantity } : item
+        for (const item of result) {
+            if (item.commodity) {
+                const inBasket = basket.find(b => b.marketName === item.marketName && b.commodity)
+                const quantity = inBasket ? item.quantity - inBasket.quantity : item.quantity
+
+                if (quantity > 0) {
+                    visible.push({ ...item, quantity })
                 }
 
 
-                return item
-            })
-            .filter(item => !item.commodity
-                ? !basket.find(b => b.id === item.id)
-                : item.quantity > 0
-            )
-            .filter(item => {
-                if (hasStickers) return true
-                const isGun = !item.commodity && item.marketName.includes(' | ')
-                if (!isGun) return true
-                return !item.stickers || item.stickers.length === 0
-            })
-            .sort((a, b) => {
-                if (b.price !== a.price) return b.price - a.price
+                continue
+            }
 
-                return b.quantity - a.quantity
-            })
+
+            const inBasket = basket.find(b => b.id === item.id)
+            const isGun = item.marketName.includes(" | ")
+            const hasStickerList = !!item.stickers && item.stickers.length > 0
+            const hiddenByStickers = !hasStickers && isGun && hasStickerList
+
+            if (!inBasket && !hiddenByStickers) {
+                visible.push(item)
+            }
+        }
+
+
+        visible.sort((a, b) => {
+            if (b.price !== a.price) {
+                return b.price - a.price
+            }
+
+
+            return b.quantity - a.quantity
+        })
+
+        return visible
     }, [listings, basket, hasStickers])
 
 
@@ -345,23 +424,37 @@ export default function HomeClient(
         <>
             <LeftPanel
                 currentGame={game}
-                minPrice={filters.minPrice} setMinPrice={v => setFilter("minPrice", v)}
-                maxPrice={filters.maxPrice} setMaxPrice={v => setFilter("maxPrice", v)}
-                wear={filters.wear} setWear={v => setFilter("wear", v)}
-                minFloat={filters.minFloat} setMinFloat={v => setFilter("minFloat", v)}
-                maxFloat={filters.maxFloat} setMaxFloat={v => setFilter("maxFloat", v)}
-                type={filters.type} setType={v => setFilter("type", v)}
-                rarity={filters.rarity} setRarity={v => setFilter("rarity", v)}
-                hasStickers={hasStickers} setHasStickers={setHasStickers}
+                minPrice={filters.minPrice}
+                setMinPrice={v => setFilter("minPrice", v)}
+                maxPrice={filters.maxPrice}
+                setMaxPrice={v => setFilter("maxPrice", v)}
+                wear={filters.wear}
+                setWear={v => setFilter("wear", v)}
+                minFloat={filters.minFloat}
+                setMinFloat={v => setFilter("minFloat", v)}
+                maxFloat={filters.maxFloat}
+                setMaxFloat={v => setFilter("maxFloat", v)}
+                type={filters.type}
+                setType={v => setFilter("type", v)}
+                rarity={filters.rarity}
+                setRarity={v => setFilter("rarity", v)}
+                hasStickers={hasStickers}
+                setHasStickers={setHasStickers}
             />
 
             {pendingNotice && (
-                <Prompt title="Pending order" onClose={() => setPendingNotice(false)}>
+                <Prompt
+                    title="Pending order"
+                    onClose={() => setPendingNotice(false)}
+                >
                     <p className="opacity-60 text-sm">
                         You have an active purchase in progress. You cannot add items to your basket until it is completed or cancelled.
                     </p>
 
-                    <button onClick={() => setPendingNotice(false)} className="h-9 px-4 rounded-sm bg-accent button w-fit">
+                    <button
+                        onClick={() => setPendingNotice(false)}
+                        className="h-9 px-4 rounded-sm bg-accent button w-fit"
+                    >
                         Dismiss
                     </button>
                 </Prompt>
@@ -382,17 +475,26 @@ export default function HomeClient(
 
                 <div className="border border-gray-800 frame-shadow overflow-y-auto flex-1 min-h-0 p-3 rounded-sm flex flex-col">
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 justify-start content-start gap-2">
-                        {displayListings.map(listing => (
-                            <ListingCard
-                                key={listing.id} {...listing}
-                                currentUserId={currentUserId}
-                                onBuy={() => listing.commodity ? router.push(`/item/${toSlug(listing.marketName)}`) : handleBuy(listing)}
-                                onPreview={() => listing.commodity ? router.push(`/item/${toSlug(listing.marketName)}`) : router.push(`/item/${toSlug(listing.marketName)}/${listing.id}`)}
-                            />
-                        ))}
+                        {displayListings.map(listing => {
+                            const itemPage = `/item/${toSlug(listing.marketName)}`
+                            const listingPage = listing.commodity ? itemPage : `${itemPage}/${listing.id}`
+
+                            return (
+                                <ListingCard
+                                    key={listing.id}
+                                    {...listing}
+                                    currentUserId={currentUserId}
+                                    onBuy={() => listing.commodity ? router.push(itemPage) : handleBuy(listing)}
+                                    onPreview={() => router.push(listingPage)}
+                                />
+                            )
+                        })}
                     </div>
 
-                    <div ref={sentinelRef} className="h-1 shrink-0" />
+                    <div
+                        ref={sentinelRef}
+                        className="h-1 shrink-0"
+                    />
                 </div>
             </div>
         </>

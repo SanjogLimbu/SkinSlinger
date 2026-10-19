@@ -39,12 +39,14 @@ export function BasketProvider({ children }: { children: React.ReactNode }) {
     )
 }
 
+
 export function useBasket() {
     const ctx = useContext(BasketContext)
 
     if (!ctx) {
         throw new Error("useBasket must be used within BasketProvider")
     }
+
 
     return ctx
 }

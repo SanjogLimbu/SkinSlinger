@@ -51,14 +51,20 @@ type PurchaseGroup = {
 
 function groupPurchases(purchases: Purchase[]): PurchaseGroup[] {
     const map = new Map<string, PurchaseGroup>()
+
     for (const p of purchases) {
-        const key = p.commodity ? `${p.marketName}|${p.status}|${p.buyerId}|${p.sellerId}` : p.id
+        const key = p.commodity
+            ? `${p.marketName}|${p.status}|${p.buyerId}|${p.sellerId}`
+            : p.id
+
         const existing = map.get(key)
+
         if (existing) {
             existing.ids.push(p.id)
             existing.totalPrice += p.price
             existing.tradeOfferSentAt = existing.tradeOfferSentAt ?? p.tradeOfferSentAt
-        } else {
+        }
+        else {
             map.set(key, {
                 ids: [p.id],
                 createdAt: p.createdAt,
@@ -80,6 +86,8 @@ function groupPurchases(purchases: Purchase[]): PurchaseGroup[] {
             })
         }
     }
+
+
     return [...map.values()]
 }
 
@@ -97,8 +105,13 @@ function statusChip(status: string) {
     return STATUS_CHIP[status] ?? { label: status, className: "bg-white/5 text-gray-400" }
 }
 
+
 function formatDate(d: Date) {
-    return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    return new Date(d).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+    })
 }
 
 const HOLD_MS = 8 * 24 * 60 * 60 * 1000
@@ -129,11 +142,19 @@ function CancelModal({ refundMessage, tradeOfferSent, onConfirm, onClose, loadin
             )}
 
             <div className="flex gap-3">
-                <button onClick={onConfirm} disabled={loading} className="h-9 px-4 rounded-sm bg-negative button flex-1">
+                <button
+                    onClick={onConfirm}
+                    disabled={loading}
+                    className="h-9 px-4 rounded-sm bg-negative button flex-1"
+                >
                     {loading ? "..." : "Yes, cancel"}
                 </button>
 
-                <button onClick={onClose} disabled={loading} className="h-9 px-4 rounded-sm bg-accent button flex-1">
+                <button
+                    onClick={onClose}
+                    disabled={loading}
+                    className="h-9 px-4 rounded-sm bg-accent button flex-1"
+                >
                     Go back
                 </button>
             </div>
@@ -166,6 +187,7 @@ function useCancel(ids: string[]) {
 
         router.refresh()
         setLoading(false)
+
         return true
     }
 
@@ -177,7 +199,6 @@ function useCancel(ids: string[]) {
 // Keep in sync with AUTO_CANCEL_MS in app/api/cron/process-purchases.
 const AUTO_CANCEL_MS = 3 * 24 * 60 * 60 * 1000
 
-// Counts down to when the cron auto-cancels an order whose trade offer was never sent.
 function ExpiryTimer({ createdAt }: { createdAt: Date }) {
     const [msLeft, setMsLeft] = useState<number | null>(null)
 
@@ -195,18 +216,30 @@ function ExpiryTimer({ createdAt }: { createdAt: Date }) {
         return <span className="font-mono text-gray-300">...</span>
     }
 
+
     if (msLeft <= 0) {
         return <span className="font-mono text-gray-300">any moment now</span>
     }
+
 
     const d = Math.floor(msLeft / 86400000)
     const h = Math.floor(msLeft / 3600000) % 24
     const m = Math.floor(msLeft / 60000) % 60
     const s = Math.floor(msLeft / 1000) % 60
 
+    let timeLeft = `${m}m ${s.toString().padStart(2, "0")}s`
+
+    if (d > 0) {
+        timeLeft = `${d}d ${h}h ${m}m`
+    }
+    else if (h > 0) {
+        timeLeft = `${h}h ${m}m ${s}s`
+    }
+
+
     return (
         <span className="font-mono text-gray-300">
-            {d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s.toString().padStart(2, "0")}s`}
+            {timeLeft}
         </span>
     )
 }
@@ -215,8 +248,17 @@ function ExpiryTimer({ createdAt }: { createdAt: Date }) {
 
 function Avatar({ image, name }: { image: string | null; name: string }) {
     if (image) {
-        return <Image src={image} alt={name} width={36} height={36} className="rounded-[4px] shrink-0" />
+        return (
+            <Image
+                src={image}
+                alt={name}
+                width={36}
+                height={36}
+                className="rounded-[4px] shrink-0"
+            />
+        )
     }
+
 
     return (
         <span className="w-9 h-9 rounded-[4px] bg-accent flex items-center justify-center text-sm font-semibold shrink-0">
@@ -225,31 +267,55 @@ function Avatar({ image, name }: { image: string | null; name: string }) {
     )
 }
 
-function StageTracker({ stages, currentStep, extra }: { stages: string[]; currentStep: number; extra?: Partial<Record<number, React.ReactNode>> }) {
+
+function StageTracker({ stages, currentStep, extra }: {
+    stages: string[]
+    currentStep: number
+    extra?: Partial<Record<number, React.ReactNode>>
+}) {
     return (
         <ol className="flex flex-col gap-0">
             {stages.map((stage, i) => {
                 const done = i < currentStep
                 const active = i === currentStep
+
+                let circleColor = "bg-white/5 text-gray-500"
+                let labelColor = "text-gray-500"
+
+                if (done) {
+                    circleColor = "bg-special"
+                    labelColor = "text-gray-400"
+                }
+                else if (active) {
+                    circleColor = "bg-yellow-400/15 text-yellow-400 ring-1 ring-yellow-400/50"
+                    labelColor = "text-white font-medium"
+                }
+
+
                 return (
                     <li key={i} className="flex gap-3">
                         <div className="flex flex-col items-center">
                             <span className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold
-                                ${done ? "bg-special" : active ? "bg-yellow-400/15 text-yellow-400 ring-1 ring-yellow-400/50" : "bg-white/5 text-gray-500"}`}
+                                ${circleColor}`}
                             >
                                 {done ? "✓" : i + 1}
 
                             </span>
+
                             {i < stages.length - 1 && (
                                 <span className={`w-px flex-1 my-0.5 ${done ? "bg-special/50" : "bg-gray-700/60"}`} />
                             )}
                         </div>
 
                         <div className="pb-4 pt-0.5 min-w-0 flex-1">
-                            <p className={`text-sm ${done ? "text-gray-400" : active ? "text-white font-medium" : "text-gray-500"}`}>
+                            <p className={`text-sm ${labelColor}`}>
                                 {stage}
-                                {active && <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse align-middle" />}
+
+                                {active && (
+                                    <span className="ml-2 inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse align-middle" />
+                                )}
                             </p>
+
                             {extra?.[i]}
                         </div>
                     </li>
@@ -259,11 +325,13 @@ function StageTracker({ stages, currentStep, extra }: { stages: string[]; curren
     )
 }
 
+
 function HoldProgress({ deliveredAt }: { deliveredAt: Date }) {
     const [now, setNow] = useState(() => Date.now())
 
     useEffect(() => {
         const id = setInterval(() => setNow(Date.now()), 30000)
+
         return () => clearInterval(id)
     }, [])
 
@@ -272,7 +340,10 @@ function HoldProgress({ deliveredAt }: { deliveredAt: Date }) {
 
     return (
         <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden mt-1.5">
-            <div className="h-full bg-special transition-[width] duration-1000" style={{ width: `${pct}%` }} />
+            <div
+                className="h-full bg-special transition-[width] duration-1000"
+                style={{ width: `${pct}%` }}
+            />
         </div>
     )
 }
@@ -283,7 +354,9 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
     const [showHoldInfo, setShowHoldInfo] = useState(false)
     const { cancel, loading, error } = useCancel(group.ids)
 
-    const counterpartyName = role === "buyer" ? (group.sellerName ?? "Seller") : (group.buyerName ?? "Buyer")
+    const counterpartyName = role === "buyer"
+        ? (group.sellerName ?? "Seller")
+        : (group.buyerName ?? "Buyer")
     const counterpartyImage = role === "buyer" ? group.sellerImage : group.buyerImage
 
     const stages = role === "buyer"
@@ -303,9 +376,18 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
         ]
 
 
-    // "pending" is awaiting the trade; "holding" means delivered and clearing (waiting out the 8-day window).
     const isHolding = group.status === "holding"
-    const currentStep = isHolding ? 3 : group.tradeOfferSentAt ? 2 : 1
+
+    let currentStep = 1
+
+    if (isHolding) {
+        currentStep = 3
+    }
+    else if (group.tradeOfferSentAt) {
+        currentStep = 2
+    }
+
+
     const releaseText = group.deliveredAt
         ? formatDate(new Date(new Date(group.deliveredAt).getTime() + HOLD_MS))
         : "soon"
@@ -323,25 +405,39 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
                     >
                         i
                     </button>
+
                     {showHoldInfo && (
                         <p className="text-xs text-gray-500">
                             Steam allows a trade to be reversed for up to 7 days after it&apos;s accepted. We hold {role === "seller" ? "your payout" : "this order"} for 8 days to protect against reversed/scammed trades.
                         </p>
                     )}
                 </div>
-                {isHolding && group.deliveredAt && <HoldProgress deliveredAt={group.deliveredAt} />}
+
+                {isHolding && group.deliveredAt && (
+                    <HoldProgress deliveredAt={group.deliveredAt} />
+                )}
             </div>
         ),
     }
 
+    const glow = group.hexColor ? { boxShadow: `0 0 32px #${group.hexColor}1a` } : undefined
+    const nameColor = group.hexColor ? { color: `#${group.hexColor}` } : undefined
+    const chip = statusChip(group.status)
+
     return (
-        <div className="bg-secondary rounded-sm p-5 flex flex-col gap-3" style={group.hexColor ? { boxShadow: `0 0 32px #${group.hexColor}1a` } : undefined}>
-            {/* Header: item + counterparty + price */}
+        <div className="bg-secondary rounded-sm p-5 flex flex-col gap-3" style={glow}>
+            {/* Header */}
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                     {group.icon && (
                         <div className="relative shrink-0 w-14 h-14">
-                            <Image src={group.icon} alt={group.marketName} fill className="object-contain" />
+                            <Image
+                                src={group.icon}
+                                alt={group.marketName}
+                                fill
+                                className="object-contain"
+                            />
+
                             {group.commodity && group.ids.length > 1 && (
                                 <span className="absolute -top-1 -right-1 bg-primary text-xs px-1 rounded-sm leading-5">
                                     x{group.ids.length}
@@ -349,10 +445,12 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
                             )}
                         </div>
                     )}
+
                     <div className="min-w-0">
-                        <p className="font-semibold truncate" style={group.hexColor ? { color: `#${group.hexColor}` } : undefined}>
+                        <p className="font-semibold truncate" style={nameColor}>
                             {group.marketName}
                         </p>
+
                         <p className="text-xs text-gray-500 mt-0.5">
                             {role === "buyer" ? "Buying" : "Selling"} · ordered {formatDate(group.createdAt)}
                         </p>
@@ -360,9 +458,12 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
                 </div>
 
                 <div className="text-right shrink-0">
-                    <p className="font-semibold text-lg [font-family:var(--font-display)]">${group.totalPrice.toFixed(2)}</p>
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded-sm ${statusChip(group.status).className}`}>
-                        {statusChip(group.status).label}
+                    <p className="font-semibold text-lg [font-family:var(--font-display)]">
+                        ${group.totalPrice.toFixed(2)}
+                    </p>
+
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-sm ${chip.className}`}>
+                        {chip.label}
                     </span>
                 </div>
             </div>
@@ -370,9 +471,15 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
             {/* Counterparty */}
             <div className="flex items-center gap-3 bg-primary/60 rounded-sm px-3 py-2.5">
                 <Avatar image={counterpartyImage} name={counterpartyName} />
+
                 <div className="min-w-0">
-                    <p className="text-xs text-gray-500">{role === "buyer" ? "Trading with seller" : "Trading with buyer"}</p>
-                    <p className="text-sm font-medium truncate">{counterpartyName}</p>
+                    <p className="text-xs text-gray-500">
+                        {role === "buyer" ? "Trading with seller" : "Trading with buyer"}
+                    </p>
+
+                    <p className="text-sm font-medium truncate">
+                        {counterpartyName}
+                    </p>
                 </div>
             </div>
 
@@ -381,31 +488,48 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
             <StageTracker stages={stages} currentStep={currentStep} extra={stageExtra} />
 
 
-            {/* Seller action: the trade URL they need right now */}
+            {/* Seller action */}
             {role === "seller" && !isHolding && (
                 <div className="bg-primary/60 rounded-sm p-3 flex flex-col gap-2">
-                    <p className="text-xs text-gray-500 mb-1">Send the trade offer from your Steam account to:</p>
+                    <p className="text-xs text-gray-500 mb-1">
+                        Send the trade offer from your Steam account to:
+                    </p>
+
                     {group.buyerTradeUrl ? (
-                        <a href={group.buyerTradeUrl} target="_blank" rel="noopener noreferrer" className="text-special text-sm break-all underline underline-offset-2">
+                        <a
+                            href={group.buyerTradeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-special text-sm break-all underline underline-offset-2"
+                        >
                             {group.buyerTradeUrl}
                         </a>
                     ) : (
-                        <p className="text-negative text-sm">The buyer has no trade URL on file: they need to add one before you can send the offer.</p>
+                        <p className="text-negative text-sm">
+                            The buyer has no trade URL on file: they need to add one before you can send the offer.
+                        </p>
                     )}
 
                     {group.tradeOfferSentAt ? (
-                        <p className="text-xs text-special">Trade offer sent. Waiting for the buyer to accept it on Steam.</p>
+                        <p className="text-xs text-special">
+                            Trade offer sent. Waiting for the buyer to accept it on Steam.
+                        </p>
                     ) : (
-                        <p className="text-xs text-gray-500">Sent offers are detected automatically: no need to confirm anything here.</p>
+                        <p className="text-xs text-gray-500">
+                            Sent offers are detected automatically: no need to confirm anything here.
+                        </p>
                     )}
                 </div>
             )}
 
 
-            {/* Buyer action: accept the trade offer once the seller has sent it */}
+            {/* Buyer action */}
             {role === "buyer" && !isHolding && group.tradeOfferSentAt && (
                 <div className="bg-primary/60 rounded-sm p-3 flex flex-col gap-2">
-                    <p className="text-xs text-gray-500">{counterpartyName} has sent the trade offer.</p>
+                    <p className="text-xs text-gray-500">
+                        {counterpartyName} has sent the trade offer.
+                    </p>
+
                     <a
                         href="https://steamcommunity.com/id/me/tradeoffers/"
                         target="_blank"
@@ -418,13 +542,15 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
             )}
 
 
-            {/* Footer: clearing notice while holding, otherwise verify + cancel */}
+            {/* Footer */}
             {isHolding ? (
                 <div className="border-t border-gray-700/50 pt-3">
                     <p className="text-xs text-gray-500">
-                        {role === "seller"
-                            ? <>Delivered. Funds clear to your balance around <span className="text-gray-300">{releaseText}</span>, once Steam&apos;s trade-reversal window passes.</>
-                            : <>Item received. Protection period ends around <span className="text-gray-300">{releaseText}</span>: if the trade is reversed before then, you&apos;re refunded automatically.</>}
+                        {role === "seller" ? (
+                            <>Delivered. Funds clear to your balance around <span className="text-gray-300">{releaseText}</span>, once Steam&apos;s trade-reversal window passes.</>
+                        ) : (
+                            <>Item received. Protection period ends around <span className="text-gray-300">{releaseText}</span>: if the trade is reversed before then, you&apos;re refunded automatically.</>
+                        )}
                     </p>
                 </div>
             ) : (
@@ -432,15 +558,20 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
                     <div className="flex flex-col gap-1">
                         {!group.tradeOfferSentAt && (
                             <p className="text-xs text-gray-500">
-                                {role === "seller"
-                                    ? <>Send the trade offer within <ExpiryTimer createdAt={group.createdAt} /> or the order is cancelled and the buyer refunded.</>
-                                    : <>Order cancels automatically in <ExpiryTimer createdAt={group.createdAt} /> if the seller doesn&apos;t send the trade offer.</>}
+                                {role === "seller" ? (
+                                    <>Send the trade offer within <ExpiryTimer createdAt={group.createdAt} /> or the order is cancelled and the buyer refunded.</>
+                                ) : (
+                                    <>Order cancels automatically in <ExpiryTimer createdAt={group.createdAt} /> if the seller doesn&apos;t send the trade offer.</>
+                                )}
                             </p>
                         )}
                     </div>
 
                     {role === "seller" && (
-                        <button onClick={() => setConfirming(true)} className="h-8 px-3 rounded-sm bg-negative button text-sm shrink-0">
+                        <button
+                            onClick={() => setConfirming(true)}
+                            className="h-8 px-3 rounded-sm bg-negative button text-sm shrink-0"
+                        >
                             Cancel order
                         </button>
                     )}
@@ -468,7 +599,10 @@ function ActiveTradeCard({ group, role }: { group: PurchaseGroup; role: "buyer" 
 
 
 function HistoryRow({ group, role }: { group: PurchaseGroup; role: "buyer" | "seller" }) {
-    const counterpartyName = role === "buyer" ? (group.sellerName ?? "Seller") : (group.buyerName ?? "Buyer")
+    const counterpartyName = role === "buyer"
+        ? (group.sellerName ?? "Seller")
+        : (group.buyerName ?? "Buyer")
+    const direction = role === "buyer" ? `from ${counterpartyName}` : `to ${counterpartyName}`
     const chip = statusChip(group.status)
 
     return (
@@ -476,7 +610,12 @@ function HistoryRow({ group, role }: { group: PurchaseGroup; role: "buyer" | "se
             <div className="flex items-center gap-3 min-w-0">
                 {group.icon && (
                     <div className="relative shrink-0 w-10 h-10">
-                        <Image src={group.icon} alt={group.marketName} fill className="object-contain" />
+                        <Image
+                            src={group.icon}
+                            alt={group.marketName}
+                            fill
+                            className="object-contain"
+                        />
 
                         {group.commodity && group.ids.length > 1 && (
                             <span className="absolute -top-1 -right-1 bg-primary text-[10px] px-1 rounded-sm leading-4">
@@ -492,7 +631,7 @@ function HistoryRow({ group, role }: { group: PurchaseGroup; role: "buyer" | "se
                     </p>
 
                     <p className="text-xs text-gray-500 truncate">
-                        {role === "buyer" ? `from ${counterpartyName}` : `to ${counterpartyName}`} · {formatDate(group.createdAt)}
+                        {direction} · {formatDate(group.createdAt)}
                     </p>
                 </div>
             </div>
@@ -514,37 +653,89 @@ function HistoryRow({ group, role }: { group: PurchaseGroup; role: "buyer" | "se
 
 function maskEmail(email: string) {
     const [local, domain] = email.split("@")
-    if (!domain) return "*".repeat(email.length)
-    const maskedLocal = local.length <= 1 ? "*" : local[0] + "*".repeat(local.length - 1)
+
+    if (!domain) {
+        return "*".repeat(email.length)
+    }
+
+
+    const maskedLocal = local.length <= 1
+        ? "*"
+        : local[0] + "*".repeat(local.length - 1)
+
     return `${maskedLocal}@${domain}`
 }
 
-function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificationEmail: string | null; pendingEmail: string | null }) {
+
+function EmailNotificationCard({ notificationEmail, pendingEmail }: {
+    notificationEmail: string | null
+    pendingEmail: string | null
+}) {
     const [confirmedEmail, setConfirmedEmail] = useState(notificationEmail ?? "")
     const [revealed, setRevealed] = useState(false)
-    const { step, setStep, email, setEmail, code, setCode, loading, error, setError, sendCode, confirm } = useEmailVerification(
-        notificationEmail ? "done" : pendingEmail ? "code" : "idle",
+
+    let initialStep: "idle" | "code" | "done" = "idle"
+
+    if (notificationEmail) {
+        initialStep = "done"
+    }
+    else if (pendingEmail) {
+        initialStep = "code"
+    }
+
+
+    const {
+        step,
+        setStep,
+        email,
+        setEmail,
+        code,
+        setCode,
+        loading,
+        error,
+        setError,
+        sendCode,
+        confirm,
+    } = useEmailVerification(
+        initialStep,
         notificationEmail ?? pendingEmail ?? "",
         setConfirmedEmail,
     )
+
+    function changeEmail() {
+        setStep("idle")
+        setEmail(confirmedEmail)
+        setCode("")
+        setError("")
+    }
+
 
     return (
         <section className="bg-secondary rounded-sm p-5 flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <h2 className="text-lg font-semibold">Email notifications</h2>
+                    <h2 className="text-lg font-semibold">
+                        Email notifications
+                    </h2>
+
                     <p className="text-xs text-gray-500 mt-0.5">
                         Get an email when you make a sale or need to send a trade offer.
                     </p>
                 </div>
+
                 {step === "done" && (
-                    <span className="text-xs px-2 py-0.5 rounded-sm bg-special/10 text-special shrink-0">Confirmed</span>
+                    <span className="text-xs px-2 py-0.5 rounded-sm bg-special/10 text-special shrink-0">
+                        Confirmed
+                    </span>
                 )}
             </div>
 
             {step === "done" ? (
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-primary/60 rounded-sm px-3 py-2.5">
-                    <p className="text-sm break-all">{revealed ? confirmedEmail : maskEmail(confirmedEmail)}</p>
+                    <p className="text-sm break-all">
+                        {revealed ? confirmedEmail : maskEmail(confirmedEmail)}
+                    </p>
+
                     <div className="flex gap-2 shrink-0">
                         <button
                             onClick={() => setRevealed(r => !r)}
@@ -552,8 +743,9 @@ function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificati
                         >
                             {revealed ? "Hide" : "Show"}
                         </button>
+
                         <button
-                            onClick={() => { setStep("idle"); setEmail(confirmedEmail); setCode(""); setError(""); }}
+                            onClick={changeEmail}
                             className="h-8 px-3 rounded-sm bg-accent button text-sm"
                         >
                             Change
@@ -565,6 +757,7 @@ function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificati
                     <p className="text-sm text-gray-400">
                         Enter the 4-digit code sent to <span className="text-white break-all">{email}</span>.
                     </p>
+
                     <div className="flex gap-2">
                         <input
                             value={code}
@@ -573,6 +766,7 @@ function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificati
                             placeholder="1234"
                             className="bg-primary rounded-sm h-10 px-3 outline-none border border-gray-600 text-sm flex-1 min-w-0 tracking-widest"
                         />
+
                         <button
                             onClick={confirm}
                             disabled={loading || code.trim().length === 0}
@@ -581,7 +775,12 @@ function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificati
                             {loading ? "..." : "Confirm"}
                         </button>
                     </div>
-                    <button onClick={sendCode} disabled={loading} className="text-special text-xs underline underline-offset-2 self-start">
+
+                    <button
+                        onClick={sendCode}
+                        disabled={loading}
+                        className="text-special text-xs underline underline-offset-2 self-start"
+                    >
                         Resend code
                     </button>
                 </div>
@@ -594,6 +793,7 @@ function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificati
                         placeholder="you@example.com"
                         className="bg-primary rounded-sm h-10 px-3 outline-none border border-gray-600 text-sm flex-1 min-w-0"
                     />
+
                     <button
                         onClick={sendCode}
                         disabled={loading || email.trim().length === 0}
@@ -604,7 +804,11 @@ function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificati
                 </div>
             )}
 
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && (
+                <p className="text-red-400 text-sm">
+                    {error}
+                </p>
+            )}
         </section>
     )
 }
@@ -614,8 +818,6 @@ function EmailNotificationCard({ notificationEmail, pendingEmail }: { notificati
 const EXTENSION_ID = "mdnnnglffnidgnhkmffegicnohmbnedk"
 const EXTENSION_STORE_URL = `https://chromewebstore.google.com/detail/skinslinger-trade-helper/${EXTENSION_ID}`
 
-// Detects the SkinSlinger Trade Helper via Chrome's externally_connectable
-// messaging. null while checking, false when missing (or not a Chromium browser).
 function useExtensionInstalled() {
     const [installed, setInstalled] = useState<boolean | null>(null)
 
@@ -624,27 +826,33 @@ function useExtensionInstalled() {
             sendMessage: (id: string, msg: unknown, cb: (res?: { ok?: boolean }) => void) => void
             lastError?: unknown
         }
-        const runtime = (window as unknown as { chrome?: { runtime?: ChromeRuntime } }).chrome?.runtime
+        type ChromeWindow = { chrome?: { runtime?: ChromeRuntime } }
+
+        const runtime = (window as unknown as ChromeWindow).chrome?.runtime
 
         if (!runtime?.sendMessage) {
             setInstalled(false)
+
             return
         }
+
 
         const timeout = setTimeout(() => setInstalled(false), 2000)
 
         try {
             runtime.sendMessage(EXTENSION_ID, { type: "PING" }, (response) => {
                 clearTimeout(timeout)
-                // Reading lastError stops Chrome logging an unchecked-error warning
-                // when the extension isn't installed.
+
+                // Reading lastError silences Chrome's unchecked-error warning.
                 void runtime.lastError
                 setInstalled(!!response?.ok)
             })
-        } catch {
+        }
+        catch {
             clearTimeout(timeout)
             setInstalled(false)
         }
+
 
         return () => clearTimeout(timeout)
     }, [])
@@ -652,11 +860,15 @@ function useExtensionInstalled() {
     return installed
 }
 
+
 function ExtensionPromptCard() {
     return (
         <section className="bg-secondary rounded-sm p-5 flex flex-col gap-3 ring-1 ring-yellow-400/30">
             <div>
-                <h2 className="text-lg font-semibold">Install the trade helper extension</h2>
+                <h2 className="text-lg font-semibold">
+                    Install the trade helper extension
+                </h2>
+
                 <p className="text-sm text-gray-400 mt-1">
                     The SkinSlinger Trade Helper extension is required to verify your trades: it detects
                     when you send a trade offer, confirms when the buyer accepts it, and cancels the
@@ -676,7 +888,13 @@ function ExtensionPromptCard() {
     )
 }
 
-export default function OrdersClient({ purchases, currentUserId, notificationEmail, pendingEmail }: { purchases: Purchase[]; currentUserId: string; notificationEmail: string | null; pendingEmail: string | null }) {
+
+export default function OrdersClient({ purchases, currentUserId, notificationEmail, pendingEmail }: {
+    purchases: Purchase[]
+    currentUserId: string
+    notificationEmail: string | null
+    pendingEmail: string | null
+}) {
     const groups = groupPurchases(purchases)
 
     const withRole = groups.map(g => ({
@@ -687,12 +905,14 @@ export default function OrdersClient({ purchases, currentUserId, notificationEma
 
     const active = withRole.filter(({ group }) => group.status === "pending")
     const clearing = withRole.filter(({ group }) => group.status === "holding")
-    const history = withRole.filter(({ group }) => group.status !== "pending" && group.status !== "holding")
+    const history = withRole.filter(({ group }) => {
+        return group.status !== "pending" && group.status !== "holding"
+    })
 
-    // Only sellers need the extension (it runs in the seller's Steam session), so
-    // buyers are never prompted to install it.
+    // Only sellers need the extension, since it runs in their Steam session.
     const extensionInstalled = useExtensionInstalled()
     const isSellingActively = active.some(({ role }) => role === "seller")
+    const showExtensionPrompt = isSellingActively && extensionInstalled === false
 
     return (
         <div className="w-full flex-1 min-h-0 flex justify-center pt-40 px-4 md:px-8 overflow-y-auto pb-10">
@@ -701,10 +921,14 @@ export default function OrdersClient({ purchases, currentUserId, notificationEma
                     Orders
                 </h1>
 
-                {isSellingActively && extensionInstalled === false && <ExtensionPromptCard />}
-                <EmailNotificationCard notificationEmail={notificationEmail} pendingEmail={pendingEmail} />
+                {showExtensionPrompt && <ExtensionPromptCard />}
 
-                {/* Active trades, front and center */}
+                <EmailNotificationCard
+                    notificationEmail={notificationEmail}
+                    pendingEmail={pendingEmail}
+                />
+
+                {/* Active trades */}
                 <section className="flex flex-col gap-3">
                     <h2 className="text-lg font-semibold">
                         Active {active.length === 1 ? "trade" : "trades"}
@@ -722,30 +946,42 @@ export default function OrdersClient({ purchases, currentUserId, notificationEma
                                 No trades in progress.
                             </p>
 
-                            <Link href="/market" className="text-special text-sm underline underline-offset-2">
+                            <Link
+                                href="/market"
+                                className="text-special text-sm underline underline-offset-2"
+                            >
                                 Browse the market
                             </Link>
                         </div>
                     ) : (
                         active.map(({ group, role }) => (
-                            <ActiveTradeCard key={group.ids[0]} group={group} role={role} />
+                            <ActiveTradeCard
+                                key={group.ids[0]}
+                                group={group}
+                                role={role}
+                            />
                         ))
                     )}
                 </section>
 
 
-                {/* Clearing: delivered, inside the 8-day reversal hold */}
+                {/* Clearing */}
                 {clearing.length > 0 && (
                     <section className="flex flex-col gap-3">
                         <h2 className="text-lg font-semibold">
                             Clearing
+
                             <span className="text-gray-500 font-normal text-sm ml-2">
                                 {clearing.length}
                             </span>
                         </h2>
 
                         {clearing.map(({ group, role }) => (
-                            <ActiveTradeCard key={group.ids[0]} group={group} role={role} />
+                            <ActiveTradeCard
+                                key={group.ids[0]}
+                                group={group}
+                                role={role}
+                            />
                         ))}
                     </section>
                 )}
@@ -760,7 +996,11 @@ export default function OrdersClient({ purchases, currentUserId, notificationEma
 
                         <div className="flex flex-col gap-2">
                             {history.map(({ group, role }) => (
-                                <HistoryRow key={group.ids[0]} group={group} role={role} />
+                                <HistoryRow
+                                    key={group.ids[0]}
+                                    group={group}
+                                    role={role}
+                                />
                             ))}
                         </div>
                     </section>

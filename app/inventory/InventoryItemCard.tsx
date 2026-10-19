@@ -17,13 +17,21 @@ function InventoryItemCard({ item, quantity, setSelling, hexColor, loading = fal
     }
 
 
+    const cardStyle = {
+        '--glow': `#${hexColor}44`,
+        border: `1px solid #${hexColor}`,
+    } as React.CSSProperties
+
     return (
         <div
             className="bg-accent h-60 md:h-72 w-full relative transition-all duration-200 hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:[box-shadow:0_8px_20px_var(--glow),0_4px_10px_rgba(0,0,0,0.5)]"
-            style={{ '--glow': `#${hexColor}44`, border: `1px solid #${hexColor}` } as React.CSSProperties}
+            style={cardStyle}
         >
-            <div className="absolute top-0 left-0 right-0 h-10 pointer-events-none z-1" style={{ background: `linear-gradient(to bottom, #${hexColor}88, transparent)` }} />
-           
+            <div
+                className="absolute top-0 left-0 right-0 h-10 pointer-events-none z-1"
+                style={{ background: `linear-gradient(to bottom, #${hexColor}88, transparent)` }}
+            />
+
             <div className="flex justify-between mt-2 pl-2 pr-2 w-full absolute z-2">
                 <h1 className="text-[10px] md:text-[14px] w-35 font-medium">
                     {item.market_name}
@@ -51,8 +59,13 @@ function InventoryItemCard({ item, quantity, setSelling, hexColor, loading = fal
                     <div className="flex gap-1">
                         {item.stickers.slice(0, 4).map((s, i) => (
                             <Image
-                                key={i} src={s.image} alt={s.name} title={s.name} width={60} height={60} 
-                                style={{ opacity: s.wear != null ? 1 - s.wear * 0.8 : 1 }} 
+                                key={i}
+                                src={s.image}
+                                alt={s.name}
+                                title={s.name}
+                                width={60}
+                                height={60}
+                                style={{ opacity: s.wear != null ? 1 - s.wear * 0.8 : 1 }}
                                 className="h-[20px] md:h-[30px] w-auto"
                             />
                         ))}
@@ -63,16 +76,31 @@ function InventoryItemCard({ item, quantity, setSelling, hexColor, loading = fal
                 {item.floatValue && (
                     <>
                         {item.paintSeed != null && (
-                            <p className="text-[10px] opacity-50">Pattern: <span className="text-gray-200">{item.paintSeed}</span></p>
+                            <p className="text-[10px] opacity-50">
+                                Pattern:{" "}
+
+                                <span className="text-gray-200">
+                                    {item.paintSeed}
+                                </span>
+                            </p>
                         )}
-                        <p className="text-[10px] opacity-50 font-mono">Wear Rating: {item.floatValue.toFixed(6)}</p>
-                        <FloatBar value={item.floatValue} showLabels={false} />
+
+                        <p className="text-[10px] opacity-50 font-mono">
+                            Wear Rating: {item.floatValue.toFixed(6)}
+                        </p>
+
+                        <FloatBar
+                            value={item.floatValue}
+                            showLabels={false}
+                        />
                     </>
                 )}
             </div>
 
             <div className="absolute bottom-2 right-2 z-2 flex items-center gap-2">
-                <p className="text-[15px]">{loading ? '...' : `$${item.price.toFixed(2)}`}</p>
+                <p className="text-[15px]">
+                    {loading ? '...' : `$${item.price.toFixed(2)}`}
+                </p>
 
                 <button
                     onClick={add}
@@ -86,8 +114,8 @@ function InventoryItemCard({ item, quantity, setSelling, hexColor, loading = fal
     )
 }
 
-// The parent rebuilds item objects every render; compare the fields that actually
-// affect output so price streaming only re-renders the cards that changed.
+
+// The parent rebuilds items every render, so only the fields shown are compared.
 export default memo(InventoryItemCard, (prev, next) =>
     prev.item.assetId === next.item.assetId &&
     prev.item.price === next.item.price &&
@@ -95,4 +123,3 @@ export default memo(InventoryItemCard, (prev, next) =>
     prev.hexColor === next.hexColor &&
     prev.loading === next.loading
 )
-

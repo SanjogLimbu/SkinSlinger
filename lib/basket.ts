@@ -12,11 +12,15 @@ export type BasketItem = {
 //
 
 export function getBasket(): BasketItem[] {
-    if (typeof window === "undefined") return []
+    if (typeof window === "undefined") {
+        return []
+    }
+
 
     try {
         return JSON.parse(localStorage.getItem("basket") ?? "[]")
-    } catch {
+    }
+    catch {
         return []
     }
 }
@@ -30,4 +34,3 @@ export function saveBasket(basket: BasketItem[]) {
 export function clearBasket() {
     localStorage.removeItem("basket")
 }
-

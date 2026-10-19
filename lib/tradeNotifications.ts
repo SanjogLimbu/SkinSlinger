@@ -7,6 +7,8 @@ import { TradeOfferSentEmail } from "@/app/components/emails/TradeOfferSentEmail
 
 const resend = new Resend(process.env.RESEND_API)
 
+type EmailItem = { marketName: string; price: number }
+
 export type CompletedTrade = {
     marketName: string
     price: number
@@ -20,24 +22,35 @@ export type ReversedTrade = {
     buyerEmail: string | null
 }
 
-// Emails both sides of a completed trade: the buyer (items received) and the
-// seller (funds released). Items are grouped per recipient so a stack of
-// commodities completed in one pass produces a single email each. Failures are
-// swallowed — notifications must never block or roll back the completion itself.
+//
+
+function addToGroup(groups: Map<string, EmailItem[]>, email: string, item: EmailItem) {
+    const items = groups.get(email) ?? []
+
+    items.push(item)
+    groups.set(email, items)
+}
+
+//
+
+// Failures are ignored, so they can't roll back the trade.
 export async function sendTradeCompleteEmails(trades: CompletedTrade[]) {
-    const buyerGroups = new Map<string, { marketName: string; price: number }[]>()
-    const sellerGroups = new Map<string, { marketName: string; price: number }[]>()
+    const buyerGroups = new Map<string, EmailItem[]>()
+    const sellerGroups = new Map<string, EmailItem[]>()
 
     for (const t of trades) {
         const item = { marketName: t.marketName, price: t.price }
+
         if (t.buyerEmail) {
-            buyerGroups.set(t.buyerEmail, [...(buyerGroups.get(t.buyerEmail) ?? []), item])
+            addToGroup(buyerGroups, t.buyerEmail, item)
         }
 
+
         if (t.sellerEmail) {
-            sellerGroups.set(t.sellerEmail, [...(sellerGroups.get(t.sellerEmail) ?? []), item])
+            addToGroup(sellerGroups, t.sellerEmail, item)
         }
     }
+
 
     const sends: Promise<unknown>[] = []
 
@@ -50,6 +63,7 @@ export async function sendTradeCompleteEmails(trades: CompletedTrade[]) {
         }))
     }
 
+
     for (const [email, items] of sellerGroups) {
         sends.push(resend.emails.send({
             from: "SkinSlinger <onboarding@skinslinger.com>",
@@ -59,29 +73,46 @@ export async function sendTradeCompleteEmails(trades: CompletedTrade[]) {
         }))
     }
 
+
     await Promise.allSettled(sends)
 }
 
-// Notifies a buyer that the seller has marked a trade offer as sent: self-reported by
-// the seller, purely informational (doesn't affect payout/escrow, which only advances on
-// the actual Steam inventory check).
-export async function sendTradeOfferSentEmail(buyerEmail: string, sellerName: string, items: { marketName: string; price: number }[]) {
-    await resend.emails.send({
-        from: "SkinSlinger <onboarding@skinslinger.com>",
-        to: [buyerEmail],
-        subject: items.length > 1 ? "Action needed: accept your trade offers" : "Action needed: accept your trade offer",
-        react: TradeOfferSentEmail({ sellerName, items }),
-    }).catch(() => {})
+
+export async function sendTradeOfferSentEmail(
+    buyerEmail: string,
+    sellerName: string,
+    items: EmailItem[],
+) {
+    const subject = items.length > 1
+        ? "Action needed: accept your trade offers"
+        : "Action needed: accept your trade offer"
+
+    try {
+        await resend.emails.send({
+            from: "SkinSlinger <onboarding@skinslinger.com>",
+            to: [buyerEmail],
+            subject,
+            react: TradeOfferSentEmail({ sellerName, items }),
+        })
+    }
+    catch {
+        // Email failures are ignored, so they can't block the trade.
+    }
 }
 
-// Notifies buyers that a delivered trade was reversed and they've been refunded.
+
 export async function sendReversalRefundEmails(trades: ReversedTrade[]) {
-    const buyerGroups = new Map<string, { marketName: string; price: number }[]>()
+    const buyerGroups = new Map<string, EmailItem[]>()
 
     for (const t of trades) {
-        if (!t.buyerEmail) continue
-        buyerGroups.set(t.buyerEmail, [...(buyerGroups.get(t.buyerEmail) ?? []), { marketName: t.marketName, price: t.price }])
+        if (!t.buyerEmail) {
+            continue
+        }
+
+
+        addToGroup(buyerGroups, t.buyerEmail, { marketName: t.marketName, price: t.price })
     }
+
 
     const sends: Promise<unknown>[] = []
 
@@ -93,6 +124,7 @@ export async function sendReversalRefundEmails(trades: ReversedTrade[]) {
             react: ReversalRefundEmail({ items }),
         }))
     }
+
 
     await Promise.allSettled(sends)
 }

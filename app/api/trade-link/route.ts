@@ -26,14 +26,25 @@ export async function POST(request: Request) {
             return Response.json({ error: "Unauthorized request" }, { status: 401 })
         }
 
-        const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { steam_id: true } })
+
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email },
+            select: { steam_id: true },
+        })
 
         if (!user?.steam_id) {
-            return Response.json({ error: "Link your Steam account before adding a trade URL." }, { status: 400 })
+            return Response.json(
+                { error: "Link your Steam account before adding a trade URL." },
+                { status: 400 },
+            )
         }
 
+
         if (urlSteamId !== user.steam_id) {
-            return Response.json({ error: "This trade URL doesn't belong to your linked Steam account." }, { status: 400 })
+            return Response.json(
+                { error: "This trade URL doesn't belong to your linked Steam account." },
+                { status: 400 },
+            )
         }
 
 
@@ -44,7 +55,6 @@ export async function POST(request: Request) {
             }
         })
 
-
         return Response.json(null, { status: 200 })
     }
     catch (error) {
@@ -53,4 +63,3 @@ export async function POST(request: Request) {
         return Response.json({ error: "Server error" }, { status: 500 })
     }
 }
-

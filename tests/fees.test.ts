@@ -20,7 +20,11 @@ function tradeVolume(volume: number | null) {
 describe("getWithdrawalFee", () => {
 
     it("A signed-out user sees the starting rate, without a database lookup.", async () => {
-        expect(await getWithdrawalFee()).toEqual({ rate: 0.025, volume: 0, next: { minVolume: 100, rate: 0.02 } })
+        expect(await getWithdrawalFee()).toEqual({
+            rate: 0.025,
+            volume: 0,
+            next: { minVolume: 100, rate: 0.02 },
+        })
         expect(prisma.purchase.aggregate).not.toHaveBeenCalled()
     })
 

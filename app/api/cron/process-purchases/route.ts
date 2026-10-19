@@ -1,83 +1,125 @@
 import { prisma } from "@/lib/db"
 import { verifyBuyerHasItem } from "@/lib/steam"
-import { sendTradeCompleteEmails, sendReversalRefundEmails, CompletedTrade, ReversedTrade } from "@/lib/tradeNotifications"
+import {
+    sendTradeCompleteEmails,
+    sendReversalRefundEmails,
+    CompletedTrade,
+    ReversedTrade,
+} from "@/lib/tradeNotifications"
 
 //
 
-// Funds are held after delivery for the Steam trade-reversal window before being
-// released to the seller, so a seller can't deliver, get paid, then reverse the trade.
+// Steam's trade-reversal window, so a seller can't deliver, get paid, then reverse the trade.
 const HOLD_MS = 8 * 24 * 60 * 60 * 1000
 
-// A pending order that the seller hasn't even sent a trade offer for yet (stage 2) is
-// auto-cancelled after this long, so a buyer's cash isn't held hostage by an unresponsive seller.
+// A seller who hasn't sent a trade offer by then loses the sale, so the buyer's cash isn't stuck.
 const AUTO_CANCEL_MS = 3 * 24 * 60 * 60 * 1000
 
 //
 
-// Releases held funds to the seller once the hold has elapsed and the item is still
-// with the buyer. Returns true only on the real holding -> completed transition.
+type CancellablePurchase = {
+    id: string
+    buyerId: string
+    sellerId: string
+    price: number
+    assetId: string
+    marketName: string
+    game: string | null
+    icon: string | null
+    hexColor: string | null
+    commodity: boolean
+}
+
+//
+
+// The status check makes a repeat run a no-op, so the seller is never paid twice.
 async function completePurchase(id: string, sellerId: string, price: number): Promise<boolean> {
     return prisma.$transaction(async (tx) => {
-        const updated = await tx.purchase.updateMany({ where: { id, status: "holding" }, data: { status: "completed" } })
-        if (updated.count === 0) return false
-        await tx.user.update({ where: { id: sellerId }, data: { cash: { increment: price } } })
-        return true
-    })
-}
+        const updated = await tx.purchase.updateMany({
+            where: { id, status: "holding" },
+            data: { status: "completed" },
+        })
 
-// Refunds the buyer when a delivered item disappears during the hold window (a Steam
-// trade reversal). Returns true only on the real holding -> reversed transition.
-async function refundReversal(id: string, buyerId: string, price: number): Promise<boolean> {
-    return prisma.$transaction(async (tx) => {
-        const updated = await tx.purchase.updateMany({ where: { id, status: "holding" }, data: { status: "reversed" } })
-        if (updated.count === 0) return false
-        await tx.user.update({ where: { id: buyerId }, data: { cash: { increment: price } } })
-        return true
-    })
-}
+        if (updated.count === 0) {
+            return false
+        }
 
-// Auto-cancels a pending order that never made it past stage 2 (no trade offer sent):
-// refunds the buyer and restores the listing, same as a manual cancel. Returns true only
-// on the real pending -> deleted transition.
-async function autoCancelPurchase(p: {
-    id: string; buyerId: string; sellerId: string; price: number; assetId: string
-    marketName: string; game: string | null; icon: string | null; hexColor: string | null; commodity: boolean
-}): Promise<boolean> {
-    return prisma.$transaction(async (tx) => {
-        const removed = await tx.purchase.deleteMany({ where: { id: p.id, status: "pending" } })
-        if (removed.count === 0) return false
 
-        await tx.user.update({ where: { id: p.buyerId }, data: { cash: { increment: p.price } } })
-
-        await tx.item_listing.create({
-            data: {
-                assetId: p.assetId,
-                marketName: p.marketName,
-                price: p.price,
-                game: p.game,
-                icon: p.icon,
-                hexColor: p.hexColor,
-                commodity: p.commodity,
-                userId: p.sellerId,
-            },
+        await tx.user.update({
+            where: { id: sellerId },
+            data: { cash: { increment: price } },
         })
 
         return true
     })
 }
 
+
+// The status check makes a repeat run a no-op, so the buyer is never refunded twice.
+async function refundReversal(id: string, buyerId: string, price: number): Promise<boolean> {
+    return prisma.$transaction(async (tx) => {
+        const updated = await tx.purchase.updateMany({
+            where: { id, status: "holding" },
+            data: { status: "reversed" },
+        })
+
+        if (updated.count === 0) {
+            return false
+        }
+
+
+        await tx.user.update({
+            where: { id: buyerId },
+            data: { cash: { increment: price } },
+        })
+
+        return true
+    })
+}
+
+
+// Only the run that removes the order refunds it, so the buyer is never refunded twice.
+async function autoCancelPurchase(purchase: CancellablePurchase): Promise<boolean> {
+    return prisma.$transaction(async (tx) => {
+        const removed = await tx.purchase.deleteMany({ where: { id: purchase.id, status: "pending" } })
+
+        if (removed.count === 0) {
+            return false
+        }
+
+
+        await tx.user.update({
+            where: { id: purchase.buyerId },
+            data: { cash: { increment: purchase.price } },
+        })
+
+        const listing = {
+            assetId: purchase.assetId,
+            marketName: purchase.marketName,
+            price: purchase.price,
+            game: purchase.game,
+            icon: purchase.icon,
+            hexColor: purchase.hexColor,
+            commodity: purchase.commodity,
+            userId: purchase.sellerId,
+        }
+
+        // The seller may have listed the item again, and a duplicate would fail the whole refund.
+        await tx.item_listing.createMany({ data: [listing], skipDuplicates: true })
+
+        return true
+    })
+}
+
 //
 
-export async function GET(req: Request) {
+export async function GET(request: Request) {
     const secret = process.env.CRON_SECRET
 
-    if (secret) {
-        const auth = req.headers.get("authorization")
-
-        if (auth !== `Bearer ${secret}`) {
-            return Response.json({ error: "Unauthorized" }, { status: 401 })
-        }
+    if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
+        return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
+
 
     try {
         const active = await prisma.purchase.findMany({
@@ -91,10 +133,12 @@ export async function GET(req: Request) {
             },
         })
 
-        // Float/pattern data is keyed by the seller's listing assetId (= purchase.assetId)
-        // and is used to verify a skin precisely, since assetid itself changes on trade.
-        const floatRows = await prisma.item_float.findMany({ where: { assetId: { in: active.map(p => p.assetId) } } })
-        const floatMap = new Map(floatRows.map(f => [f.assetId, f]))
+        // Float data is stored under the seller's asset id, since an item's asset id changes when it's traded.
+        const floatRows = await prisma.item_float.findMany({
+            where: { assetId: { in: active.map((purchase) => purchase.assetId) } },
+        })
+
+        const floatByAssetId = new Map(floatRows.map((row) => [row.assetId, row]))
 
         const now = Date.now()
         const completedTrades: CompletedTrade[] = []
@@ -102,75 +146,121 @@ export async function GET(req: Request) {
         let delivered = 0
         let autoCancelled = 0
 
-        for (const p of active) {
-            if (!p.buyer.steam_id) continue
-
-            // Never move money for a non-positive price. Such a row can only exist from a bad
-            // listing that predates the price validation; skip it so it can't pay out or refund.
-            if (!Number.isFinite(p.price) || p.price <= 0) continue
-
-            // Holding orders only need checking once the hold has elapsed — no point polling
-            // Steam during the window since the item is trade-locked and can't move.
-            const matured = p.status === "holding" && p.deliveredAt != null && (now - p.deliveredAt.getTime()) >= HOLD_MS
-            if (p.status === "holding" && !matured) continue
-
-            // Orders the extension is tracking wait for its own acceptance report
-            // (POST /api/extension/offer-status) instead of this inventory heuristic:
-            // Steam hides recently-traded/trade-locked items from third-party inventory
-            // lookups, which makes this check unreliable for freshly-sent trades anyway.
-            if (p.status === "pending" && p.tradeOfferId) continue
-
-            const f = floatMap.get(p.assetId)
-            const float = f ? { floatValue: f.floatValue, paintSeed: f.paintSeed } : null
-            const buyerTradeUrl = p.buyerTradeUrl ?? p.buyer.steam_trade_url
-            const result = await verifyBuyerHasItem(p.buyer.steam_id, p.game, p.marketName, float, buyerTradeUrl, p.buyerPreCount)
-
-            if (result === "error") {
-                continue // Steam unreachable — retry next run
-            }
-
-            if (p.status === "pending") {
-                // Awaiting delivery. has_item or private => delivered; start the hold.
-                if (result === "has_item" || result === "private") {
-                    const moved = await prisma.purchase.updateMany({
-                        where: { id: p.id, status: "pending" },
-                        data: { status: "holding", deliveredAt: new Date() },
-                    })
-                    if (moved.count > 0) delivered++
+        for (const purchase of active) {
+            try {
+                if (!purchase.buyer.steam_id) {
+                    continue
                 }
-                // "no_item" => not delivered yet. If the seller hasn't even sent the trade
-                // offer within the window, auto-cancel rather than leave the buyer's cash stuck.
-                else if (p.tradeOfferSentAt == null && (now - p.createdAt.getTime()) >= AUTO_CANCEL_MS) {
-                    const cancelled = await autoCancelPurchase(p)
-                    if (cancelled) autoCancelled++
+
+
+                // Money never moves on a price of zero or less, which only listings older than price validation have.
+                if (!Number.isFinite(purchase.price) || purchase.price <= 0) {
+                    continue
                 }
-            }
-            else {
-                // Holding and matured. Item still there (or hidden) => pay seller; gone => reversal.
-                if (result === "has_item" || result === "private") {
-                    const ok = await completePurchase(p.id, p.sellerId, p.price)
-                    if (ok) {
+
+
+                const holding = purchase.status === "holding"
+                const deliveredAt = purchase.deliveredAt?.getTime()
+                const matured = holding && deliveredAt != null && now - deliveredAt >= HOLD_MS
+
+                // The item is trade-locked during the hold, so there's nothing to check until it ends.
+                if (holding && !matured) {
+                    continue
+                }
+
+
+                // The extension reports these itself, and Steam hides freshly traded items from inventory lookups.
+                if (purchase.status === "pending" && purchase.tradeOfferId) {
+                    continue
+                }
+
+
+                const float = floatByAssetId.get(purchase.assetId) ?? null
+
+                const result = await verifyBuyerHasItem(
+                    purchase.buyer.steam_id,
+                    purchase.game,
+                    purchase.marketName,
+                    float,
+                    purchase.buyerTradeUrl ?? purchase.buyer.steam_trade_url,
+                    purchase.buyerPreCount,
+                )
+
+                // Money never moves on a guess, so the order waits for the next run.
+                if (result === "error") {
+                    continue
+                }
+
+
+                const itemArrived = result === "has_item" || result === "private"
+                const offerSent = purchase.tradeOfferSentAt != null
+                const overdue = now - purchase.createdAt.getTime() >= AUTO_CANCEL_MS
+
+                if (purchase.status === "pending") {
+                    if (itemArrived) {
+                        const moved = await prisma.purchase.updateMany({
+                            where: { id: purchase.id, status: "pending" },
+                            data: { status: "holding", deliveredAt: new Date() },
+                        })
+
+                        if (moved.count > 0) {
+                            delivered++
+                        }
+                    }
+                    // No trade offer in time, so the order is cancelled rather than leaving the buyer's cash stuck.
+                    else if (!offerSent && overdue) {
+                        const cancelled = await autoCancelPurchase(purchase)
+
+                        if (cancelled) {
+                            autoCancelled++
+                        }
+                    }
+                }
+                else if (itemArrived) {
+                    const completed = await completePurchase(
+                        purchase.id,
+                        purchase.sellerId,
+                        purchase.price,
+                    )
+
+                    if (completed) {
                         completedTrades.push({
-                            marketName: p.marketName, price: p.price,
-                            buyerEmail: p.buyer.notificationEmail, sellerEmail: p.seller.notificationEmail,
+                            marketName: purchase.marketName,
+                            price: purchase.price,
+                            buyerEmail: purchase.buyer.notificationEmail,
+                            sellerEmail: purchase.seller.notificationEmail,
                         })
                     }
                 }
+                // The item left the buyer during the hold, so the trade was reversed.
                 else {
-                    const ok = await refundReversal(p.id, p.buyerId, p.price)
-                    if (ok) {
+                    const refunded = await refundReversal(purchase.id, purchase.buyerId, purchase.price)
+
+                    if (refunded) {
                         reversedTrades.push({
-                            marketName: p.marketName, price: p.price, buyerEmail: p.buyer.notificationEmail,
+                            marketName: purchase.marketName,
+                            price: purchase.price,
+                            buyerEmail: purchase.buyer.notificationEmail,
                         })
                     }
                 }
+            }
+            catch (error) {
+                // One failing order mustn't hold up the rest.
+                console.error(`[process-purchases] purchase ${purchase.id} failed:`, error)
             }
         }
+
 
         await sendTradeCompleteEmails(completedTrades)
         await sendReversalRefundEmails(reversedTrades)
 
-        return Response.json({ delivered, completed: completedTrades.length, reversed: reversedTrades.length, autoCancelled })
+        return Response.json({
+            delivered,
+            completed: completedTrades.length,
+            reversed: reversedTrades.length,
+            autoCancelled,
+        })
     }
     catch (error) {
         console.error(error)

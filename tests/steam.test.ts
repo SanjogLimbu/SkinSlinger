@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { checkCanTrade, fetchItemPrice, fetchOwnedAssetIds, fetchPriceHistory, verifyBuyerHasItem } from "@/lib/steam"
+import {
+    checkCanTrade,
+    countInventoryItem,
+    fetchItemPrice,
+    fetchOwnedAssetIds,
+    fetchPriceHistory,
+    verifyBuyerHasItem,
+} from "@/lib/steam"
 
 //
 
@@ -18,7 +25,6 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 }
 
 
-// Replaces fetch with one that returns these responses in order
 function mockFetch(...responses: Response[]) {
     const fetch = vi.fn()
 
@@ -97,6 +103,13 @@ describe("verifyBuyerHasItem", () => {
     })
 
 
+    it("A single copy of a skin with a different float is the buyer's own, not the one sold.", async () => {
+        mockFetch(json([skin(0.31, 100)]))
+
+        expect(await verifyBuyerHasItem("1", "CS2", SKIN, SKIN_FLOAT)).toBe("no_item")
+    })
+
+
     it("With several copies of a skin, the exact float and pattern must match.", async () => {
         mockFetch(json([skin(0.31, 100), skin(0.25, 661)]))
 
@@ -166,7 +179,7 @@ describe("verifyBuyerHasItem", () => {
 
 //
 
-// Results are cached per steam id for an hour, so each test uses its own id
+// Results are cached per steam id for an hour, so each test uses its own id.
 describe("checkCanTrade", () => {
 
     it("A user with no trade URL is allowed without calling the API.", async () => {
@@ -180,7 +193,13 @@ describe("checkCanTrade", () => {
     it("A malformed trade URL is rejected without calling the API.", async () => {
         const fetch = mockFetch()
 
-        expect(await checkCanTrade("bad-url", "https://example.com/tradeoffer/new/?partner=1&token=x")).toEqual({ allowed: false, reason: "corrupt_url" })
+        const badUrl = "https://example.com/tradeoffer/new/?partner=1&token=x"
+
+        expect(await checkCanTrade("bad-url", badUrl)).toEqual({
+            allowed: false,
+            reason: "corrupt_url",
+        })
+
         expect(fetch).not.toHaveBeenCalled()
     })
 
@@ -188,7 +207,10 @@ describe("checkCanTrade", () => {
     it("An account Steam says cannot trade is blocked.", async () => {
         mockFetch(json({ tradeurlvalid: false }))
 
-        expect(await checkCanTrade("cannot-trade", TRADE_URL)).toEqual({ allowed: false, reason: "Your Steam account cannot trade at this time." })
+        expect(await checkCanTrade("cannot-trade", TRADE_URL)).toEqual({
+            allowed: false,
+            reason: "Your Steam account cannot trade at this time.",
+        })
     })
 
 
@@ -233,7 +255,14 @@ describe("checkCanTrade", () => {
 describe("fetchItemPrice", () => {
 
     it("Averages the price across markets, ignoring missing and zero prices.", async () => {
-        mockFetch(json([{ prices: { buff: { price: 10 }, skinport: { price: 20 }, empty: { price: 0 }, broken: { price: null } } }]))
+        const prices = {
+            buff: { price: 10 },
+            skinport: { price: 20 },
+            empty: { price: 0 },
+            broken: { price: null },
+        }
+
+        mockFetch(json([{ prices }]))
 
         expect(await fetchItemPrice(SKIN, "CS2")).toBe(15)
     })
@@ -295,12 +324,20 @@ describe("fetchPriceHistory", () => {
             { price: 1, createdat: "2026-10-01T00:00:00Z" },
         ]))
 
-        expect(await fetchPriceHistory(SKIN)).toEqual([{ date: "2026-10-01", price: 1 }, { date: "2026-10-03", price: 3 }])
+        expect(await fetchPriceHistory(SKIN)).toEqual([
+            { date: "2026-10-01", price: 1 },
+            { date: "2026-10-03", price: 3 },
+        ])
     })
 
 
     it("Keeps only the newest 180 days.", async () => {
-        mockFetch(json(Array.from({ length: 200 }, (_, i) => ({ price: 200 - i, createdat: "2026-10-01T00:00:00Z" }))))
+        const days = Array.from({ length: 200 }, (_, i) => ({
+            price: 200 - i,
+            createdat: "2026-10-01T00:00:00Z",
+        }))
+
+        mockFetch(json(days))
 
         const history = await fetchPriceHistory(SKIN)
 
@@ -337,7 +374,10 @@ describe("fetchOwnedAssetIds", () => {
 
 
     it("Pages through inventories of more than 2,000 items.", async () => {
-        const fetch = mockFetch(json(FULL_PAGE, 200, { last_assetid: "1999" }), json([{ assetid: "2000" }]))
+        const fetch = mockFetch(
+            json(FULL_PAGE, 200, { last_assetid: "1999" }),
+            json([{ assetid: "2000" }]),
+        )
 
         expect((await fetchOwnedAssetIds("1", "CS2"))?.size).toBe(2001)
         expect(new URL(fetch.mock.calls[1][0]).searchParams.get("start_assetid")).toBe("1999")
@@ -362,6 +402,56 @@ describe("fetchOwnedAssetIds", () => {
         mockFetch(json([]))
 
         expect(await fetchOwnedAssetIds("1", "CS2")).toBeNull()
+    })
+
+})
+
+//
+
+describe("countInventoryItem", () => {
+
+    it("Counts copies from the same view verification uses, with trade-locked items included.", async () => {
+        const fetch = mockFetch(json([
+            { marketname: CASE },
+            { marketname: CASE },
+            { marketname: SKIN },
+        ]))
+
+        expect(await countInventoryItem("1", "CS2", CASE, TRADE_URL)).toBe(2)
+
+        const params = new URL(fetch.mock.calls[0][0]).searchParams
+
+        expect(params.get("with_no_tradable")).toBe("1")
+        expect(params.get("trade_url")).toBe(TRADE_URL)
+    })
+
+
+    it("A failed live fetch is retried once against cached data, like verification.", async () => {
+        const fetch = mockFetch(json({}, 500), json([{ marketname: CASE }]))
+
+        expect(await countInventoryItem("1", "CS2", CASE, TRADE_URL)).toBe(1)
+        expect(new URL(fetch.mock.calls[1][0]).searchParams.has("no_cache")).toBe(false)
+    })
+
+
+    it("A readable inventory without the item counts zero, so a new buyer isn't turned away.", async () => {
+        mockFetch(json({}, 410))
+
+        expect(await countInventoryItem("1", "CS2", CASE, TRADE_URL)).toBe(0)
+    })
+
+
+    it("Returns null when the inventory can't be read, rather than zero.", async () => {
+        mockFetch(json({}, 500), json({}, 500))
+
+        expect(await countInventoryItem("1", "CS2", CASE, TRADE_URL)).toBeNull()
+    })
+
+
+    it("Returns null for a private inventory.", async () => {
+        mockFetch(json({}, 403))
+
+        expect(await countInventoryItem("1", "CS2", CASE, TRADE_URL)).toBeNull()
     })
 
 })

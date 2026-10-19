@@ -9,7 +9,6 @@ const url_start = "https://steamcommunity.com/tradeoffer/new/?partner="
 
 //
 
-// Trade URL validation and saving, shared by the modal below and the trade-restricted page.
 export function useTradeUrlForm(onSaved: () => void) {
     const [url, setUrl] = useState("")
     const [error, setError] = useState("")
@@ -17,6 +16,7 @@ export function useTradeUrlForm(onSaved: () => void) {
 
     function checkUrl(event: React.ChangeEvent<HTMLInputElement>) {
         const val = event.target.value
+
         setUrl(val)
 
         if (!val.includes(url_start) && val.length > 0) {
@@ -33,6 +33,7 @@ export function useTradeUrlForm(onSaved: () => void) {
         if (error != "") {
             return
         }
+
 
         setWaiting(true)
 
@@ -86,6 +87,7 @@ export default function SteamUrlPrompt({ onLinked, onClose }: {
                         required
                         onChange={checkUrl}
                     />
+
                     {error && (
                         <p className="text-red-500 text-xs">
                             {error}

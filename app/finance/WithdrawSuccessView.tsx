@@ -1,6 +1,12 @@
 import { CheckIcon, ExternalIcon } from './ui'
 
-export default function WithdrawSuccessView({ usdcAmount, transactionHash, onDone }: { usdcAmount: number, transactionHash?: string, onDone: () => void }) {
+//
+
+export default function WithdrawSuccessView({ usdcAmount, transactionHash, onDone }: {
+    usdcAmount: number,
+    transactionHash?: string,
+    onDone: () => void,
+}) {
     return (
         <div className="w-full max-w-md bg-secondary rounded-sm frame-shadow p-8 flex flex-col items-center text-center gap-4">
             <span className="w-14 h-14 rounded-full bg-special/15 ring-1 ring-special/40 flex items-center justify-center">

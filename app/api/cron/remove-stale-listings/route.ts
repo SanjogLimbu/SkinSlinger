@@ -5,21 +5,28 @@ import { fetchOwnedAssetIds } from "@/lib/steam"
 
 export const maxDuration = 300
 
-// steamwebapi allows 20 requests a minute, shared with the live site, so lookups are spaced out
+// steamwebapi allows 20 requests a minute, shared with the live site.
 const LOOKUP_INTERVAL_MS = 4000
 
-// Stop starting lookups before the function's time limit; sellers not reached wait for a later run
+// Stops before the function's time limit; the rest wait for a later run.
 const TIME_BUDGET_MS = 240_000
 
-type SellerGame = { steamId: string, game: string, listings: { id: string, assetId: string }[] }
+type SellerGame = {
+    steamId: string,
+    game: string,
+    listings: { id: string, assetId: string }[],
+}
 
 //
 
-// Groups every listing by seller and game, since one inventory lookup covers each group.
-// The game is read from the asset id, which is always `${game}:${assetid}`.
+// Groups listings by seller and game, since one inventory lookup covers each group.
 async function loadListingsBySellerGame(): Promise<SellerGame[]> {
     const listings = await prisma.item_listing.findMany({
-        select: { id: true, assetId: true, user: { select: { steam_id: true } } },
+        select: {
+            id: true,
+            assetId: true,
+            user: { select: { steam_id: true } },
+        },
     })
     const groups = new Map<string, SellerGame>()
 
@@ -27,7 +34,10 @@ async function loadListingsBySellerGame(): Promise<SellerGame[]> {
         const steamId = listing.user.steam_id
         const game = listing.assetId.split(":")[0]
 
-        if (!steamId) continue
+        if (!steamId) {
+            continue
+        }
+
 
         const key = `${steamId}:${game}`
         const group = groups.get(key) ?? { steamId, game, listings: [] }
@@ -36,12 +46,11 @@ async function loadListingsBySellerGame(): Promise<SellerGame[]> {
         groups.set(key, group)
     }
 
+
     return [...groups.values()]
 }
 
 
-// Removes listings whose item is no longer in the seller's Steam inventory (sold or traded elsewhere). 
-// A seller whose inventory can't be read is skipped.
 export async function GET(req: Request) {
     const secret = process.env.CRON_SECRET
 
@@ -53,7 +62,7 @@ export async function GET(req: Request) {
         }
     }
 
-    
+
     try {
         const dryRun = new URL(req.url).searchParams.has("dryRun")
         const startedAt = Date.now()
@@ -61,8 +70,7 @@ export async function GET(req: Request) {
         let checked = 0
         let skipped = 0
 
-        
-        // Random order, so if one run can't reach every seller, a different set is reached each day
+        // Random order, so a run that can't reach everyone reaches a different set each day.
         const groups = (await loadListingsBySellerGame()).sort(() => Math.random() - 0.5)
 
         for (const group of groups) {
@@ -87,16 +95,24 @@ export async function GET(req: Request) {
             checked += group.listings.length
 
             for (const listing of group.listings) {
-                if (!ownedAssetIds.has(listing.assetId)) staleListingIds.push(listing.id)
+                if (!ownedAssetIds.has(listing.assetId)) {
+                    staleListingIds.push(listing.id)
+                }
             }
         }
+
 
         if (!dryRun && staleListingIds.length > 0) {
             await prisma.item_listing.deleteMany({ where: { id: { in: staleListingIds } } })
         }
 
 
-        return Response.json({ dryRun, checked, skipped, stale: staleListingIds.length })
+        return Response.json({
+            dryRun,
+            checked,
+            skipped,
+            stale: staleListingIds.length,
+        })
     }
     catch (error) {
         console.error(error)

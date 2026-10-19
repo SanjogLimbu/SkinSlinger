@@ -2,14 +2,16 @@ type Rarity = { key: string, label: string, hex: string }
 
 //
 
-// Card background in a rarity colour, with a spotlight `spotlightY` percent down
 export function rarityBackground(hexColor: string, spotlightY: number): string {
-    return `radial-gradient(circle at 50% ${spotlightY}%, #${hexColor}40, transparent 58%), linear-gradient(to bottom, #${hexColor}66, var(--color-accent) 42%, var(--color-secondary))`
+    const spotlight = `radial-gradient(circle at 50% ${spotlightY}%, #${hexColor}40, transparent 58%)`
+    const fade = `linear-gradient(to bottom, #${hexColor}66, var(--color-accent) 42%, var(--color-secondary))`
+
+    return `${spotlight}, ${fade}`
 }
 
 //
 
-// Rarity tiers per game, lowest first. A listing's hexColor is its rarity colour.
+// A listing's hexColor is its rarity colour, which is what the rarity filter matches on.
 export const RARITIES: Record<string, Rarity[]> = {
     CS2: [
         { key: "consumer", label: "Consumer", hex: "b0c3d9" },

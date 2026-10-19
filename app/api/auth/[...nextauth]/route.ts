@@ -19,10 +19,7 @@ async function auth(
     clientSecret: process.env.STEAM_SECRET!
   })
 
-  // Link a fresh OAuth account to an existing user matched by email. Safe here
-  // because the email is `<steamid>@steamcommunity.com` derived from Steam's
-  // OpenID-verified SteamID (the only provider), so it can't be spoofed. This
-  // also recovers users whose `account` row was lost but whose `user` remains.
+  // Safe because the email comes from Steam's verified SteamID, the only provider.
   steam.allowDangerousEmailAccountLinking = true
 
   return NextAuth(req, { params }, {

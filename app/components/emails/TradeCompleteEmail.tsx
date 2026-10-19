@@ -41,9 +41,17 @@ export function TradeCompleteEmail({ role, items }: Props) {
                     </p>
 
                     {items.map((item, i) => (
-                        <div key={i} style={{ backgroundColor: '#363636', borderRadius: '4px', padding: '12px 16px', marginBottom: '8px' }}>
-                            <p style={{ margin: '0 0 4px', color: '#ffffff', fontSize: '14px' }}>{item.marketName}</p>
-                            <p style={{ margin: 0, color: '#0088be', fontSize: '14px', fontWeight: 'bold' }}>${item.price.toFixed(2)}</p>
+                        <div
+                            key={i}
+                            style={{ backgroundColor: '#363636', borderRadius: '4px', padding: '12px 16px', marginBottom: '8px' }}
+                        >
+                            <p style={{ margin: '0 0 4px', color: '#ffffff', fontSize: '14px' }}>
+                                {item.marketName}
+                            </p>
+
+                            <p style={{ margin: 0, color: '#0088be', fontSize: '14px', fontWeight: 'bold' }}>
+                                ${item.price.toFixed(2)}
+                            </p>
                         </div>
                     ))}
 
@@ -51,7 +59,10 @@ export function TradeCompleteEmail({ role, items }: Props) {
                         <span style={{ color: '#aaaaaa', fontSize: '14px' }}>
                             {role === 'seller' ? 'Released: ' : 'Total: '}
                         </span>
-                        <span style={{ color: '#ffffff', fontSize: '14px', fontWeight: 'bold' }}>${total.toFixed(2)}</span>
+
+                        <span style={{ color: '#ffffff', fontSize: '14px', fontWeight: 'bold' }}>
+                            ${total.toFixed(2)}
+                        </span>
                     </div>
                 </div>
             </div>

@@ -1,7 +1,6 @@
 import { getBaseUrl } from '../lib/site'
 
-// llms.txt — a machine-readable site summary for AI/answer engines (GEO).
-// Plain markdown, stable facts, canonical URLs.
+//
 
 export async function GET() {
     const base = getBaseUrl()

@@ -15,7 +15,10 @@ export const metadata: Metadata = {
 export default async function OrdersPage() {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id) redirect("/")
+    if (!session?.user?.id) {
+        redirect("/")
+    }
+
 
     const userId = session.user.id
 
@@ -39,10 +42,7 @@ export default async function OrdersPage() {
         take: 200,
     })
 
-    // Build a sanitized DTO — never ship counterparty emails to the client
-    // (anything passed to a client component is readable in the RSC payload,
-    // even if it's never rendered). The buyer's trade URL is only needed by
-    // the seller, to send the trade offer.
+    // Props reach the browser even when unrendered, so only the seller gets the buyer's trade URL.
     const purchases = rows.map(p => ({
         id: p.id,
         createdAt: p.createdAt,
@@ -60,7 +60,9 @@ export default async function OrdersPage() {
         sellerName: p.seller.name,
         buyerImage: p.buyer.image,
         sellerImage: p.seller.image,
-        buyerTradeUrl: p.sellerId === userId ? (p.buyerTradeUrl ?? p.buyer.steam_trade_url) : null,
+        buyerTradeUrl: p.sellerId === userId
+            ? (p.buyerTradeUrl ?? p.buyer.steam_trade_url)
+            : null,
     }))
 
     return (

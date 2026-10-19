@@ -12,20 +12,20 @@ import { GAME_NAMES, GAME_SLUGS, getBaseUrl, JsonLd } from "@/app/lib/site"
 
 //
 
+type Props = { params: Promise<{ slug: string }> }
+
 const getItem = cache(async (slug: string) => {
-    // PERF NOTE: this REGEXP_REPLACE in the WHERE clause cannot use an index, so every
-    // hit on this (heavily crawled) page scans item_listing. When you can touch the
-    // schema, either add an indexed `slug` column populated with toSlug() on insert, or
-    // create a functional index on this exact expression:
-    //   CREATE INDEX item_listing_slug_idx ON item_listing
-    //   (TRIM(BOTH '-' FROM REGEXP_REPLACE(LOWER("marketName"), '[^a-z0-9]+', '-', 'g')));
-    // Reverse the slug to find the marketName via PostgreSQL
+    // The regex can't use an index, so every lookup scans item_listing.
     const rows = await prisma.$queryRaw<{ marketName: string }[]>`
         SELECT "marketName" FROM item_listing
         WHERE TRIM(BOTH '-' FROM REGEXP_REPLACE(LOWER("marketName"), '[^a-z0-9]+', '-', 'g')) = ${slug}
         LIMIT 1
     `
-    if (!rows.length) return null
+
+    if (!rows.length) {
+        return null
+    }
+
 
     const { marketName } = rows[0]
 
@@ -41,20 +41,35 @@ const getItem = cache(async (slug: string) => {
         }),
     ])
 
-    if (!listings.length || !listingMeta?.icon || !listingMeta?.hexColor || !listingMeta?.game) {
+    if (
+        !listings.length
+        || !listingMeta?.icon
+        || !listingMeta?.hexColor
+        || !listingMeta?.game
+    ) {
         return null
     }
 
-    const inv = { icon: listingMeta.icon, hexColor: listingMeta.hexColor, game: listingMeta.game }
+
+    const inv = {
+        icon: listingMeta.icon,
+        hexColor: listingMeta.hexColor,
+        game: listingMeta.game,
+    }
+
     return { marketName, listings, inv }
 })
 
 //
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug } = await params
     const data = await getItem(slug)
-    if (!data) return {}
+
+    if (!data) {
+        return {}
+    }
+
 
     const { marketName, inv } = data
     const gameName = GAME_NAMES[inv.game] ?? inv.game
@@ -82,10 +97,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 //
 
-export default async function ItemTypePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ItemTypePage({ params }: Props) {
     const { slug } = await params
     const data = await getItem(slug)
-    if (!data) notFound()
+
+    if (!data) {
+        notFound()
+    }
+
 
     const { marketName, listings, inv } = data
     const gameName = GAME_NAMES[inv.game] ?? inv.game
@@ -111,7 +130,11 @@ export default async function ItemTypePage({ params }: { params: Promise<{ slug:
             "offerCount": listings.length,
             "priceCurrency": "USD",
             "availability": "https://schema.org/InStock",
-            "seller": { "@type": "Organization", "name": "SkinSlinger", "url": base },
+            "seller": {
+                "@type": "Organization",
+                "name": "SkinSlinger",
+                "url": base,
+            },
         },
     }
 
@@ -119,15 +142,41 @@ export default async function ItemTypePage({ params }: { params: Promise<{ slug:
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Home", "item": `${base}/` },
-            { "@type": "ListItem", "position": 2, "name": gameName, "item": `${base}/market/${gameSlug}` },
-            { "@type": "ListItem", "position": 3, "name": marketName, "item": `${base}/item/${slug}` },
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": `${base}/`,
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": gameName,
+                "item": `${base}/market/${gameSlug}`,
+            },
+            {
+                "@type": "ListItem",
+                "position": 3,
+                "name": marketName,
+                "item": `${base}/item/${slug}`,
+            },
         ],
     }
 
-    // Fetch order book data and user info in parallel
     const session = await getServerSession(authOptions)
     const userId = session?.user?.id ?? null
+
+    const myBuyOrdersQuery = userId
+        ? prisma.buy_order.findMany({
+            where: { marketName, userId },
+            orderBy: { createdAt: "desc" },
+            select: { id: true, price: true, quantity: true },
+        })
+        : Promise.resolve([])
+
+    const pendingCountQuery = userId
+        ? prisma.purchase.count({ where: { buyerId: userId, status: "pending" } })
+        : Promise.resolve(0)
 
     const [buyOrders, myBuyOrders, pendingCount] = await Promise.all([
         prisma.buy_order.findMany({
@@ -135,31 +184,29 @@ export default async function ItemTypePage({ params }: { params: Promise<{ slug:
             orderBy: { price: "desc" },
             select: { price: true, quantity: true },
         }),
-        userId ? prisma.buy_order.findMany({
-            where: { marketName, userId },
-            orderBy: { createdAt: "desc" },
-            select: { id: true, price: true, quantity: true },
-        }) : Promise.resolve([]),
-        userId ? prisma.purchase.count({ where: { buyerId: userId, status: "pending" } }) : Promise.resolve(0),
+        myBuyOrdersQuery,
+        pendingCountQuery,
     ])
 
-    // Aggregate sell orders by price level
     const sellMap = new Map<number, number>()
+
     for (const l of listings) {
         sellMap.set(l.price, (sellMap.get(l.price) ?? 0) + 1)
     }
-    const sellOrders = [...sellMap.entries()]
-        .map(([price, quantity]) => ({ price, quantity }))
-        .sort((a, b) => a.price - b.price)
 
-    // Aggregate buy orders by price level
+
+    const sellOrders = [...sellMap.entries()].map(([price, quantity]) => ({ price, quantity }))
+    sellOrders.sort((a, b) => a.price - b.price)
+
     const buyMap = new Map<number, number>()
+
     for (const o of buyOrders) {
         buyMap.set(o.price, (buyMap.get(o.price) ?? 0) + o.quantity)
     }
-    const buyOrderLevels = [...buyMap.entries()]
-        .map(([price, quantity]) => ({ price, quantity }))
-        .sort((a, b) => b.price - a.price)
+
+
+    const buyOrderLevels = [...buyMap.entries()].map(([price, quantity]) => ({ price, quantity }))
+    buyOrderLevels.sort((a, b) => b.price - a.price)
 
     return (
         <>
@@ -180,7 +227,9 @@ export default async function ItemTypePage({ params }: { params: Promise<{ slug:
                     <PriceHistory marketName={marketName} game={inv.game} />
                 </Suspense>
             </ItemPageClient>
+
             <JsonLd data={jsonLd} />
+
             <JsonLd data={breadcrumbJsonLd} />
         </>
     )

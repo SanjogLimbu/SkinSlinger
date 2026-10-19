@@ -28,6 +28,7 @@ function StatusContent() {
     )
 }
 
+
 export default function Status() {
     return (
         <Suspense>

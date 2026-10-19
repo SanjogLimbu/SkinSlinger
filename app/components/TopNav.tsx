@@ -10,13 +10,59 @@ import { signIn, signOut } from 'next-auth/react'
 
 //
 
+function PageLinks({
+    className,
+    showOrders,
+    pendingOrderCount,
+    onNavigate,
+}: {
+    className: string
+    showOrders: boolean
+    pendingOrderCount: number
+    onNavigate: () => void
+}) {
+    const hasPendingOrders = pendingOrderCount > 0
+
+    return (
+        <>
+            <Link
+                href="/listings"
+                className={className}
+                onClick={onNavigate}
+            >
+                Listings
+            </Link>
+
+            {showOrders && (
+                <Link
+                    href="/orders"
+                    className={`${className} ${hasPendingOrders ? "bg-special text-white!" : ""}`}
+                    onClick={onNavigate}
+                >
+                    {hasPendingOrders ? `Orders (${pendingOrderCount})` : "Orders"}
+                </Link>
+            )}
+
+            <Link
+                href="/inventory"
+                className={className}
+                onClick={onNavigate}
+            >
+                Inventory
+            </Link>
+        </>
+    )
+}
+
+//
+
 export default function TopNav() {
     const { data: session, status } = useSession()
     const { basket } = useBasket()
     const [menuOpen, setMenuOpen] = useState(false)
     const [pendingOrderCount, setPendingOrderCount] = useState(0)
 
-    // The logo box matches the market's wider left panel
+    // The logo box matches the market's wider left panel.
     const isMarket = usePathname().startsWith("/market")
 
     let basketCount = 0
@@ -26,50 +72,44 @@ export default function TopNav() {
 
         if ("quantity" in item) {
             basketCount += item.quantity
-        } else {
+        }
+        else {
             basketCount += 1
         }
     }
 
+
     useEffect(() => {
         if (!session?.user?.id || !session.user.steam_trade_url) {
             setPendingOrderCount(0)
+
             return
         }
 
+
         let cancelled = false
 
-        fetch("/api/orders/pending")
-            .then(res => res.json())
-            .then(data => { if (!cancelled) setPendingOrderCount(data.count ?? 0); })
-            .catch(() => {})
+        async function loadPendingOrders() {
+            try {
+                const res = await fetch("/api/orders/pending")
+                const data = await res.json()
 
-        return () => { cancelled = true; }
+                if (!cancelled) {
+                    setPendingOrderCount(data.count ?? 0)
+                }
+            }
+            catch {}
+        }
+
+        loadPendingOrders()
+
+        return () => {
+            cancelled = true
+        }
     }, [session?.user?.id, session?.user?.steam_trade_url])
 
 
-    // Shared by the desktop bar and the mobile dropdown
-    const pageLinks = (className: string) => (
-        <>
-            <Link href="/listings" className={className} onClick={() => setMenuOpen(false)}>
-                Listings
-            </Link>
-
-            {session?.user.steam_trade_url && (
-                <Link
-                    href="/orders"
-                    className={`${className} ${pendingOrderCount > 0 ? "bg-special text-white!" : ""}`}
-                    onClick={() => setMenuOpen(false)}
-                >
-                    {pendingOrderCount > 0 ? `Orders (${pendingOrderCount})` : "Orders"}
-                </Link>
-            )}
-
-            <Link href="/inventory" className={className} onClick={() => setMenuOpen(false)}>
-                Inventory
-            </Link>
-        </>
-    )
+    const showOrders = !!session?.user.steam_trade_url
 
 
     return (
@@ -108,11 +148,22 @@ export default function TopNav() {
                                         </Link>
                                     )}
 
-                                    {pageLinks("right-nav-link button")}
+                                    <PageLinks
+                                        className="right-nav-link button"
+                                        showOrders={showOrders}
+                                        pendingOrderCount={pendingOrderCount}
+                                        onNavigate={() => setMenuOpen(false)}
+                                    />
                                 </div>
 
                                 <Link href="/profile" className="cursor-pointer ring-1 ring-special rounded-sm p-0.5">
-                                    <Image src={session.user.image!} alt="Profile" width={40} height={40} className="rounded-[4px]" />
+                                    <Image
+                                        src={session.user.image!}
+                                        alt="Profile"
+                                        width={40}
+                                        height={40}
+                                        className="rounded-[4px]"
+                                    />
                                 </Link>
                             </>
                         ) : (
@@ -120,8 +171,16 @@ export default function TopNav() {
                                 onClick={() => signIn('steam', { callbackUrl: '/market' })}
                                 className="flex items-center gap-2 h-[80%] px-4 rounded-sm cursor-pointer transition-all bg-[#1b2838] hover:bg-[#2a475e] text-sm font-medium"
                             >
-                                <Image src="/steam-icon.svg" alt="Steam" width={20} height={20} className="shrink-0" />
+                                <Image
+                                    src="/steam-icon.svg"
+                                    alt="Steam"
+                                    width={20}
+                                    height={20}
+                                    className="shrink-0"
+                                />
+
                                 <span className="md:hidden">Sign in</span>
+
                                 <span className="hidden md:inline">Sign in through Steam</span>
                             </button>
                         ))}
@@ -132,7 +191,9 @@ export default function TopNav() {
                             aria-label="Menu"
                         >
                             <span className="block w-5 h-0.5 bg-white" />
+
                             <span className="block w-5 h-0.5 bg-white" />
+
                             <span className="block w-5 h-0.5 bg-white" />
                         </button>
                     </div>
@@ -146,24 +207,44 @@ export default function TopNav() {
                     {status !== "loading" && (session ? (
                         <>
                             {basketCount > 0 && (
-                                <Link href="/basket" className="mobile_menu_button button" onClick={() => setMenuOpen(false)}>
+                                <Link
+                                    href="/basket"
+                                    className="mobile_menu_button button"
+                                    onClick={() => setMenuOpen(false)}
+                                >
                                     Basket ({basketCount})
                                 </Link>
                             )}
 
-                            <Link href="/market" className="mobile_menu_button button" onClick={() => setMenuOpen(false)}>
+                            <Link
+                                href="/market"
+                                className="mobile_menu_button button"
+                                onClick={() => setMenuOpen(false)}
+                            >
                                 Market
                             </Link>
 
-                            {pageLinks("mobile_menu_button button")}
+                            <PageLinks
+                                className="mobile_menu_button button"
+                                showOrders={showOrders}
+                                pendingOrderCount={pendingOrderCount}
+                                onNavigate={() => setMenuOpen(false)}
+                            />
 
-                            <button className="mobile_menu_button button text-negative" onClick={() => signOut({"callbackUrl": "/"})}>
-                                Log out 
+                            <button
+                                className="mobile_menu_button button text-negative"
+                                onClick={() => signOut({ callbackUrl: "/" })}
+                            >
+                                Log out
                             </button>
                         </>
                     ) : (
                         <>
-                            <Link href="/market" className="mobile_menu_button button" onClick={() => setMenuOpen(false)}>
+                            <Link
+                                href="/market"
+                                className="mobile_menu_button button"
+                                onClick={() => setMenuOpen(false)}
+                            >
                                 Market
                             </Link>
                         </>

@@ -10,48 +10,92 @@ import PriceHistory from "@/app/components/PriceHistory"
 import { GAME_NAMES, GAME_SLUGS, getBaseUrl, JsonLd } from "@/app/lib/site"
 import { RARITIES, rarityBackground } from "@/lib/rarity"
 
+//
+
+type Props = { params: Promise<{ slug: string; id: string }> }
+type PageProps = Props & { searchParams: Promise<{ from?: string }> }
+type Sticker = { stickerId: number; slot: number; name: string; image: string; wear: number | null }
+
 function wearLabel(f: number): string {
-    if (f < 0.07) return 'Factory New'
-    if (f < 0.15) return 'Minimal Wear'
-    if (f < 0.38) return 'Field-Tested'
-    if (f < 0.45) return 'Well-Worn'
-    return 'Battle-Scarred'
+    if (f < 0.07) {
+        return 'Factory New'
+    }
+    else if (f < 0.15) {
+        return 'Minimal Wear'
+    }
+    else if (f < 0.38) {
+        return 'Field-Tested'
+    }
+    else if (f < 0.45) {
+        return 'Well-Worn'
+    }
+    else {
+        return 'Battle-Scarred'
+    }
 }
 
 //
 
 const getListing = cache(async (id: string) => {
     const listing = await prisma.item_listing.findUnique({ where: { id } })
-    if (!listing || !listing.icon || !listing.hexColor || !listing.game) {
+
+    if (
+        !listing
+        || !listing.icon
+        || !listing.hexColor
+        || !listing.game
+    ) {
         return null
     }
 
+
+    const countQuery = listing.commodity
+        ? prisma.item_listing.count({
+            where: { marketName: listing.marketName, commodity: true },
+        })
+        : Promise.resolve(1)
+
+    const sellerQuery = prisma.user.findUnique({
+        where: { id: listing.userId },
+        select: { steam_id: true, name: true, image: true },
+    })
+
+    // A skin's Steam inspect link is kept in its seller's inventory snapshot.
+    const inspectQuery = listing.game === "CS2" && !listing.commodity
+        ? prisma.$queryRaw<{ link: string | null }[]>`
+            SELECT item->>'inspectLink' AS link
+            FROM "user", jsonb_array_elements("inventoryCache"::jsonb) AS item
+            WHERE "user".id = ${listing.userId} AND item->>'assetId' = ${listing.assetId}
+            LIMIT 1
+        `
+        : Promise.resolve([])
+
     const [float, commodityCount, seller, inspectRows] = await Promise.all([
         prisma.item_float.findUnique({ where: { assetId: listing.assetId } }),
-        listing.commodity
-            ? prisma.item_listing.count({ where: { marketName: listing.marketName, commodity: true } })
-            : Promise.resolve(1),
-        prisma.user.findUnique({ where: { id: listing.userId }, select: { steam_id: true, name: true, image: true } }),
-        // A skin's Steam inspect link is kept in its seller's inventory snapshot
-        listing.game === "CS2" && !listing.commodity
-            ? prisma.$queryRaw<{ link: string | null }[]>`
-                SELECT item->>'inspectLink' AS link
-                FROM "user", jsonb_array_elements("inventoryCache"::jsonb) AS item
-                WHERE "user".id = ${listing.userId} AND item->>'assetId' = ${listing.assetId}
-                LIMIT 1
-            `
-            : Promise.resolve([]),
+        countQuery,
+        sellerQuery,
+        inspectQuery,
     ])
 
-    return { listing, float, commodityCount, seller, inspectLink: inspectRows[0]?.link ?? null }
+    return {
+        listing,
+        float,
+        commodityCount,
+        seller,
+        inspectLink: inspectRows[0]?.link ?? null,
+    }
 })
 
 //
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string; id: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { slug, id } = await params
     const data = await getListing(id)
-    if (!data) return {}
+
+    if (!data) {
+        return {}
+    }
+
 
     const { listing } = data
     const gameName = GAME_NAMES[listing.game!] ?? listing.game!
@@ -79,22 +123,41 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 //
 
-export default async function ItemPage({ params, searchParams }: { params: Promise<{ slug: string; id: string }>; searchParams: Promise<{ from?: string }> }) {
+export default async function ItemPage({ params, searchParams }: PageProps) {
     const { slug, id } = await params
     const { from } = await searchParams
     const data = await getListing(id)
-    if (!data) notFound()
+
+    if (!data) {
+        notFound()
+    }
+
 
     const { listing, float, commodityCount, seller, inspectLink } = data
     const gameName = GAME_NAMES[listing.game!] ?? listing.game!
     const gameSlug = GAME_SLUGS[listing.game!] ?? "cs2"
 
     const sellerSteamId = from === "profile" ? seller : null
-    const stickers = float?.stickers as { stickerId: number; slot: number; name: string; image: string; wear: number | null }[] | null
+    const stickers = float?.stickers as Sticker[] | null
 
-    // CS2 commodities reuse these colours under other tier names, so only skins get a label
+    // CS2 commodities reuse these colours under other tier names, so only skins get a label.
     const hasRarityName = !(listing.game === "CS2" && listing.commodity)
-    const rarity = hasRarityName ? RARITIES[listing.game!]?.find(r => r.hex === listing.hexColor!.toLowerCase()) : undefined
+    const rarityHex = listing.hexColor!.toLowerCase()
+    const rarity = hasRarityName
+        ? RARITIES[listing.game!]?.find(r => r.hex === rarityHex)
+        : undefined
+
+    const artStyle = {
+        border: `1px solid #${listing.hexColor}`,
+        background: rarityBackground(listing.hexColor!, 50),
+    }
+
+    const iconStyle = {
+        width: 'auto',
+        height: 'auto',
+        maxHeight: '300px',
+        filter: `drop-shadow(0 12px 24px #${listing.hexColor}66)`,
+    }
 
     const base = getBaseUrl()
 
@@ -111,7 +174,11 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
             "priceCurrency": "USD",
             "availability": "https://schema.org/InStock",
             "url": `${base}/item/${slug}/${id}`,
-            "seller": { "@type": "Organization", "name": "SkinSlinger", "url": base },
+            "seller": {
+                "@type": "Organization",
+                "name": "SkinSlinger",
+                "url": base,
+            },
         },
     }
 
@@ -119,10 +186,30 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         "itemListElement": [
-            { "@type": "ListItem", "position": 1, "name": "Home", "item": `${base}/` },
-            { "@type": "ListItem", "position": 2, "name": gameName, "item": `${base}/market/${gameSlug}` },
-            { "@type": "ListItem", "position": 3, "name": listing.marketName, "item": `${base}/item/${slug}` },
-            { "@type": "ListItem", "position": 4, "name": `$${listing.price.toFixed(2)}`, "item": `${base}/item/${slug}/${id}` },
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": `${base}/`,
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": gameName,
+                "item": `${base}/market/${gameSlug}`,
+            },
+            {
+                "@type": "ListItem",
+                "position": 3,
+                "name": listing.marketName,
+                "item": `${base}/item/${slug}`,
+            },
+            {
+                "@type": "ListItem",
+                "position": 4,
+                "name": `$${listing.price.toFixed(2)}`,
+                "item": `${base}/item/${slug}/${id}`,
+            },
         ],
     }
 
@@ -131,15 +218,25 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
             <div className="w-full max-w-4xl flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
                     {sellerSteamId?.steam_id ? (
-                        <Link href={`/user/${sellerSteamId.steam_id}`} className="text-sm text-gray-400 hover:text-white transition-colors">
+                        <Link
+                            href={`/user/${sellerSteamId.steam_id}`}
+                            className="text-sm text-gray-400 hover:text-white transition-colors"
+                        >
                             ← Back to {sellerSteamId.name ?? "seller"}'s profile
                         </Link>
                     ) : (
                         <>
-                            <Link href={`/market/${gameSlug}`} className="text-sm text-gray-400 hover:text-white transition-colors">
+                            <Link
+                                href={`/market/${gameSlug}`}
+                                className="text-sm text-gray-400 hover:text-white transition-colors"
+                            >
                                 ← Back to {gameName} market
                             </Link>
-                            <Link href={`/item/${slug}`} className="text-sm text-gray-400 hover:text-white transition-colors">
+
+                            <Link
+                                href={`/item/${slug}`}
+                                className="text-sm text-gray-400 hover:text-white transition-colors"
+                            >
                                 ← All {listing.marketName} listings
                             </Link>
                         </>
@@ -151,14 +248,14 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
                     {/* Item art */}
                     <div
                         className="bg-accent rounded-sm frame-shadow flex-1 min-h-72 md:min-h-112 flex items-center justify-center p-8"
-                        style={{ border: `1px solid #${listing.hexColor}`, background: rarityBackground(listing.hexColor!, 50) }}
+                        style={artStyle}
                     >
                         <Image
                             src={listing.icon!}
                             alt={listing.marketName}
                             width={360}
                             height={360}
-                            style={{ width: 'auto', height: 'auto', maxHeight: '300px', filter: `drop-shadow(0 12px 24px #${listing.hexColor}66)` }}
+                            style={iconStyle}
                             priority
                         />
                     </div>
@@ -171,28 +268,40 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
                             </h1>
 
                             <div className="flex flex-wrap gap-1.5 text-xs">
-                                <span className="text-gray-400 bg-accent px-2 py-1 rounded-sm">{gameName}</span>
+                                <span className="text-gray-400 bg-accent px-2 py-1 rounded-sm">
+                                    {gameName}
+                                </span>
 
                                 {rarity && (
-                                    <span style={{ color: `#${rarity.hex}` }} className="bg-accent px-2 py-1 rounded-sm">{rarity.label}</span>
+                                    <span style={{ color: `#${rarity.hex}` }} className="bg-accent px-2 py-1 rounded-sm">
+                                        {rarity.label}
+                                    </span>
                                 )}
 
                                 {float?.floatValue != null && (
-                                    <span className="text-gray-400 bg-accent px-2 py-1 rounded-sm">{wearLabel(float.floatValue)}</span>
+                                    <span className="text-gray-400 bg-accent px-2 py-1 rounded-sm">
+                                        {wearLabel(float.floatValue)}
+                                    </span>
                                 )}
                             </div>
                         </div>
 
                         <div className="flex items-baseline justify-between border-t border-gray-700/60 pt-4">
                             <span className="text-sm text-gray-400">Price</span>
-                            <span className="text-3xl font-semibold [font-family:var(--font-display)]">${listing.price.toFixed(2)}</span>
+
+                            <span className="text-3xl font-semibold [font-family:var(--font-display)]">
+                                ${listing.price.toFixed(2)}
+                            </span>
                         </div>
 
                         {float?.floatValue != null && (
                             <div className="flex flex-col gap-1.5 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Float</span>
-                                    <span className="font-mono">{float.floatValue.toFixed(10).replace(/0+$/, '')}</span>
+
+                                    <span className="font-mono">
+                                        {float.floatValue.toFixed(10).replace(/0+$/, '')}
+                                    </span>
                                 </div>
 
                                 <FloatBar value={float.floatValue} showLabels={false} />
@@ -202,6 +311,7 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
                         {float?.paintSeed != null && (
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-400">Pattern</span>
+
                                 <span>#{float.paintSeed}</span>
                             </div>
                         )}
@@ -212,11 +322,22 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
 
                                 {stickers.map((s, i) => (
                                     <div key={i} className="flex items-center gap-2.5 bg-accent rounded-sm px-2 py-1.5">
-                                        <Image src={s.image} alt={s.name} width={40} height={40} className="h-8 w-auto shrink-0" />
-                                        <span className="text-xs truncate" title={s.name}>{s.name}</span>
+                                        <Image
+                                            src={s.image}
+                                            alt={s.name}
+                                            width={40}
+                                            height={40}
+                                            className="h-8 w-auto shrink-0"
+                                        />
+
+                                        <span className="text-xs truncate" title={s.name}>
+                                            {s.name}
+                                        </span>
 
                                         {s.wear ? (
-                                            <span className="text-[11px] text-gray-500 ml-auto shrink-0">{Math.round(s.wear * 100)}% worn</span>
+                                            <span className="text-[11px] text-gray-500 ml-auto shrink-0">
+                                                {Math.round(s.wear * 100)}% worn
+                                            </span>
                                         ) : null}
                                     </div>
                                 ))}
@@ -228,14 +349,28 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
                                 <div className="flex flex-col gap-1.5">
                                     <span className="text-sm text-gray-400">Seller</span>
 
-                                    <Link href={`/user/${seller.steam_id}`} className="flex items-center gap-2.5 bg-accent rounded-sm px-2 py-1.5 button">
+                                    <Link
+                                        href={`/user/${seller.steam_id}`}
+                                        className="flex items-center gap-2.5 bg-accent rounded-sm px-2 py-1.5 button"
+                                    >
                                         {seller.image && (
-                                            <Image src={seller.image} alt="" width={36} height={36} className="rounded-sm shrink-0" />
+                                            <Image
+                                                src={seller.image}
+                                                alt=""
+                                                width={36}
+                                                height={36}
+                                                className="rounded-sm shrink-0"
+                                            />
                                         )}
 
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-sm truncate">{seller.name ?? "Seller"}</span>
-                                            <span className="text-[11px] text-gray-500">Steam ID <span className="font-mono text-gray-400">{seller.steam_id}</span></span>
+                                            <span className="text-sm truncate">
+                                                {seller.name ?? "Seller"}
+                                            </span>
+
+                                            <span className="text-[11px] text-gray-500">
+                                                Steam ID <span className="font-mono text-gray-400">{seller.steam_id}</span>
+                                            </span>
                                         </div>
                                     </Link>
                                 </div>
@@ -251,9 +386,12 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
                                 maxQuantity={commodityCount}
                             />
 
-                            {/* Opens the item in CS2, so it is hidden on phones */}
+                            {/* Opens the item in CS2, so it's hidden on phones. */}
                             {inspectLink?.startsWith("steam://") && (
-                                <a href={inspectLink} className="hidden md:flex -mt-2 h-10 rounded-sm bg-accent button text-sm items-center justify-center">
+                                <a
+                                    href={inspectLink}
+                                    className="hidden md:flex -mt-2 h-10 rounded-sm bg-accent button text-sm items-center justify-center"
+                                >
                                     Inspect in game
                                 </a>
                             )}
@@ -267,6 +405,7 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
             </div>
 
             <JsonLd data={jsonLd} />
+
             <JsonLd data={breadcrumbJsonLd} />
         </div>
     )

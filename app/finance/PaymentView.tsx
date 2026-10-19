@@ -15,9 +15,21 @@ type PaymentViewProps = {
     onBack: () => void
 }
 
+type FieldProps = {
+    label: string
+    value: string
+    mono?: boolean
+    copied?: boolean
+    onCopy?: () => void
+}
+
 //
 
-function Field({ label, value, mono, copied, onCopy }: { label: string; value: string; mono?: boolean; copied?: boolean; onCopy?: () => void }) {
+function Field({ label, value, mono, copied, onCopy }: FieldProps) {
+    const icon = copied
+        ? <CheckIcon className="w-4 h-4 text-special" />
+        : <CopyIcon className="w-4 h-4 text-gray-300" />
+
     return (
         <div className="flex flex-col gap-1.5">
             <span className="text-xs text-gray-400">
@@ -37,7 +49,7 @@ function Field({ label, value, mono, copied, onCopy }: { label: string; value: s
                         title={copied ? "Copied" : "Copy"}
                         className="shrink-0 w-8 h-8 rounded-sm bg-accent hover:bg-less-special flex items-center justify-center transition-colors cursor-pointer"
                     >
-                        {copied ? <CheckIcon className="w-4 h-4 text-special" /> : <CopyIcon className="w-4 h-4 text-gray-300" />}
+                        {icon}
                     </button>
                 )}
             </div>
@@ -58,12 +70,22 @@ export default function PaymentView({
 }: PaymentViewProps) {
     const isTerminal = paymentStatus === "failed" || paymentStatus === "expired"
     const isDetected = paymentStatus === "confirming" || paymentStatus === "confirmed"
-    const timeLeft = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`
+    const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, "0")
+    const seconds = String(secondsLeft % 60).padStart(2, "0")
+    const timeLeft = `${minutes}:${seconds}`
     const dot = isDetected ? "bg-special" : "bg-yellow-400 animate-pulse"
+
+    const terminalMessage = paymentStatus === "expired"
+        ? "This deposit address has expired"
+        : "Something went wrong"
 
     return (
         <div className="w-full max-w-md flex flex-col gap-4">
-            <PageHeader eyebrow="Deposit" title={`Send ${payment.payAmount} USDC`} onBack={onBack} />
+            <PageHeader
+                eyebrow="Deposit"
+                title={`Send ${payment.payAmount} USDC`}
+                onBack={onBack}
+            />
 
             <div className="bg-secondary rounded-sm frame-shadow p-5 flex flex-col gap-5">
                 {!isTerminal && (
@@ -78,8 +100,8 @@ export default function PaymentView({
 
                         {!isDetected && (
                             <span className="text-xs text-gray-400 whitespace-nowrap">
-                                Expires in 
-                                
+                                Expires in
+
                                 <span className={`font-mono ${secondsLeft < 60 ? "text-negative" : "text-gray-200"}`}>
                                     {timeLeft}
                                 </span>
@@ -92,7 +114,7 @@ export default function PaymentView({
                     <>
                         <div className="flex flex-col items-center text-center gap-1 py-2">
                             <p className="font-semibold">
-                                {paymentStatus === "expired" ? "This deposit address has expired" : "Something went wrong"}
+                                {terminalMessage}
                             </p>
 
                             <p className="text-sm text-gray-400">
@@ -100,7 +122,10 @@ export default function PaymentView({
                             </p>
                         </div>
 
-                        <button onClick={onRetry} className="bg-special button h-11 rounded-sm w-full">
+                        <button
+                            onClick={onRetry}
+                            className="bg-special button h-11 rounded-sm w-full"
+                        >
                             Start a new deposit
                         </button>
                     </>
@@ -112,29 +137,35 @@ export default function PaymentView({
                                     value={payment.payAddress}
                                     size={168}
                                     level="H"
-                                    imageSettings={{ src: "/usdc.png", width: 32, height: 32, excavate: true }}
+                                    imageSettings={{
+                                        src: "/usdc.png",
+                                        width: 32,
+                                        height: 32,
+                                        excavate: true,
+                                    }}
                                 />
                             </div>
                         </div>
 
                         <div className="flex flex-col gap-3">
-                            <Field 
-                                label="Amount" 
-                                value={`${payment.payAmount} USDC`} 
-                                copied={copied === "amount"} 
-                                onCopy={() => onCopy(String(payment.payAmount), "amount")} 
+                            <Field
+                                label="Amount"
+                                value={`${payment.payAmount} USDC`}
+                                copied={copied === "amount"}
+                                onCopy={() => onCopy(String(payment.payAmount), "amount")}
                             />
 
-                            <Field 
-                                label="Deposit address" 
-                                value={payment.payAddress} 
-                                mono copied={copied === "address"} 
-                                onCopy={() => onCopy(payment.payAddress, "address")} 
+                            <Field
+                                label="Deposit address"
+                                value={payment.payAddress}
+                                mono
+                                copied={copied === "address"}
+                                onCopy={() => onCopy(payment.payAddress, "address")}
                             />
 
-                            <Field 
-                                label="Network" 
-                                value="Polygon (PoS)" 
+                            <Field
+                                label="Network"
+                                value="Polygon (PoS)"
                             />
                         </div>
 

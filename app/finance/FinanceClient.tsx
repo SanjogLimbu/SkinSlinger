@@ -12,14 +12,33 @@ import WithdrawSuccessView from './WithdrawSuccessView'
 
 //
 
-export default function FinanceClient({ pendingBalance, lockedBalance, withdrawalFee }: { pendingBalance: number; lockedBalance: number; withdrawalFee: WithdrawalFee }) {
+type View =
+    | "menu"
+    | "deposit-amount"
+    | "payment"
+    | "deposit-success"
+    | "withdraw"
+    | "withdraw-success"
+
+type WithdrawResult = {
+    usdcAmount: number
+    transactionHash?: string
+}
+
+//
+
+export default function FinanceClient({ pendingBalance, lockedBalance, withdrawalFee }: {
+    pendingBalance: number
+    lockedBalance: number
+    withdrawalFee: WithdrawalFee
+}) {
     const { data: session } = useSession()
-    const [view, setView] = useState<"menu" | "deposit-amount" | "payment" | "deposit-success" | "withdraw" | "withdraw-success">("menu")
+    const [view, setView] = useState<View>("menu")
     const [amountInput, setAmountInput] = useState("")
     const [address, setAddress] = useState("")
     const [payment, setPayment] = useState<Payment | null>(null)
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("waiting")
-    const [withdrawResult, setWithdrawResult] = useState<{ usdcAmount: number; transactionHash?: string } | null>(null)
+    const [withdrawResult, setWithdrawResult] = useState<WithdrawResult | null>(null)
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState<"address" | "amount" | null>(null)
@@ -29,22 +48,32 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
 
     useEffect(() => {
         return () => {
-            if (pollRef.current) clearInterval(pollRef.current)
-                
-            if (timerRef.current) clearInterval(timerRef.current)
+            if (pollRef.current) {
+                clearInterval(pollRef.current)
+            }
+
+
+            if (timerRef.current) {
+                clearInterval(timerRef.current)
+            }
         }
     }, [])
 
-    
-    // The deposit id returned by /api/create-deposit is the pay address itself.
+
     function startPolling(depositId: string) {
-        if (pollRef.current) clearInterval(pollRef.current)
+        if (pollRef.current) {
+            clearInterval(pollRef.current)
+        }
+
 
         pollRef.current = setInterval(async () => {
             try {
                 const res = await fetch(`/api/deposit-status/${depositId}`)
 
-                if (!res.ok) return
+                if (!res.ok) {
+                    return
+                }
+
 
                 const { status } = await res.json() as { status: PaymentStatus }
 
@@ -53,27 +82,40 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
                 if (status === "finished") {
                     clearInterval(pollRef.current!)
                     setView("deposit-success")
-
-                } 
+                }
                 else if (status === "failed" || status === "expired") {
                     clearInterval(pollRef.current!)
                 }
-            } catch {}
+            }
+            catch {}
         }, 10000)
     }
 
 
+    async function checkFinalStatus(depositId: string) {
+        try {
+            const res = await fetch(`/api/deposit-status/${depositId}`)
+            const { status } = await res.json()
+
+            if (status === 'finished') {
+                setView('deposit-success')
+            }
+        }
+        catch {}
+    }
+
+
     function startTimer(depositId: string) {
-        if (timerRef.current) clearInterval(timerRef.current)
+        if (timerRef.current) {
+            clearInterval(timerRef.current)
+        }
+
 
         timerRef.current = setInterval(() => {
             setSecondsLeft(prev => {
                 if (prev <= 1) {
                     clearInterval(timerRef.current!)
-                    fetch(`/api/deposit-status/${depositId}`)
-                        .then(r => r.json())
-                        .then(({ status }) => { if (status === 'finished') setView('deposit-success') })
-                        .catch(() => {})
+                    checkFinalStatus(depositId)
 
                     return 0
                 }
@@ -92,8 +134,10 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
 
         if (!amount || amount < 1) {
             setError("Minimum deposit is $1.00")
+
             return
         }
+
 
         setLoading(true)
         setError("")
@@ -104,14 +148,15 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
             body: JSON.stringify({ amount }),
         })
 
-
         const data = await res.json()
 
         if (!res.ok) {
             setError(data.error ?? "Failed to create payment")
             setLoading(false)
+
             return
         }
+
 
         setPayment(data)
         setPaymentStatus("waiting")
@@ -130,13 +175,17 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
 
         if (!amount || amount < 1) {
             setError("Minimum withdrawal is $1.00")
+
             return
         }
 
+
         if (!address.trim()) {
             setError("Wallet address required")
+
             return
         }
+
 
         setLoading(true)
         setError("")
@@ -147,14 +196,15 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
             body: JSON.stringify({ amount, address }),
         })
 
-
         const data = await res.json()
 
         if (!res.ok) {
             setError(data.error ?? "Withdrawal failed")
             setLoading(false)
+
             return
         }
+
 
         setWithdrawResult(data)
         setView("withdraw-success")
@@ -170,9 +220,15 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
 
 
     function reset() {
-        if (pollRef.current) clearInterval(pollRef.current)
+        if (pollRef.current) {
+            clearInterval(pollRef.current)
+        }
 
-        if (timerRef.current) clearInterval(timerRef.current)
+
+        if (timerRef.current) {
+            clearInterval(timerRef.current)
+        }
+
 
         setAmountInput("")
         setAddress("")
@@ -185,11 +241,17 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
 
     if (view === "deposit-success") {
         content = <DepositSuccessView onDone={reset} />
-    } else if (view === "withdraw-success" && withdrawResult) {
+    }
+    else if (view === "withdraw-success" && withdrawResult) {
         content = (
-            <WithdrawSuccessView usdcAmount={withdrawResult.usdcAmount} transactionHash={withdrawResult.transactionHash} onDone={reset} />
+            <WithdrawSuccessView
+                usdcAmount={withdrawResult.usdcAmount}
+                transactionHash={withdrawResult.transactionHash}
+                onDone={reset}
+            />
         )
-    } else if (view === "payment" && payment) {
+    }
+    else if (view === "payment" && payment) {
         content = (
             <PaymentView
                 payment={payment}
@@ -197,11 +259,15 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
                 secondsLeft={secondsLeft}
                 copied={copied}
                 onCopy={copy}
-                onRetry={() => { setView("deposit-amount"); setPayment(null) }}
+                onRetry={() => {
+                    setView("deposit-amount")
+                    setPayment(null)
+                }}
                 onBack={reset}
             />
         )
-    } else if (view === "deposit-amount") {
+    }
+    else if (view === "deposit-amount") {
         content = (
             <DepositAmountView
                 amountInput={amountInput}
@@ -212,7 +278,8 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
                 onBack={reset}
             />
         )
-    } else if (view === "withdraw") {
+    }
+    else if (view === "withdraw") {
         content = (
             <WithdrawView
                 amountInput={amountInput}
@@ -227,21 +294,30 @@ export default function FinanceClient({ pendingBalance, lockedBalance, withdrawa
                 onBack={reset}
             />
         )
-    } else {
+    }
+    else {
         content = (
             <MenuView
                 balance={session?.user?.cash ?? 0}
                 pending={pendingBalance}
                 locked={lockedBalance}
                 withdrawalFee={withdrawalFee}
-                onDeposit={() => { setAmountInput(""); setError(""); setView("deposit-amount") }}
-                onWithdraw={() => { setAmountInput(""); setError(""); setView("withdraw") }}
+                onDeposit={() => {
+                    setAmountInput("")
+                    setError("")
+                    setView("deposit-amount")
+                }}
+                onWithdraw={() => {
+                    setAmountInput("")
+                    setError("")
+                    setView("withdraw")
+                }}
             />
         )
     }
 
 
-    // The body doesn't scroll, so the page does; top padding clears the fixed nav
+    // The body doesn't scroll, so the page does; top padding clears the fixed nav.
     return (
         <div className="flex-1 min-h-0 w-full overflow-y-auto no-scrollbar">
             <div className="min-h-full flex justify-center items-center px-4 pt-24 pb-10">

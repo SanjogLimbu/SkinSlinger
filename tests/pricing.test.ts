@@ -51,7 +51,7 @@ describe("pricingCalculations", () => {
 
 
     it("Min listing price is not thrown off by floating-point error.", () => {
-        // 1.1 * 0.1 is 0.11000000000000001 in JavaScript
+        // 1.1 * 0.1 is 0.11000000000000001 in JavaScript.
         expect(pricing.minListingPrice(1.1)).toBe(0.11)
     })
 

@@ -13,6 +13,7 @@ export async function GET(request: Request) {
             return Response.json({ error: "marketName required" }, { status: 400 })
         }
 
+
         const session = await getServerSession(authOptions)
         const userId = session?.user?.id ?? null
 
@@ -34,27 +35,35 @@ export async function GET(request: Request) {
             }) : Promise.resolve([]),
         ])
 
-        // Group sell orders by price level
         const sellMap = new Map<number, number>()
+
         for (const l of listings) {
             sellMap.set(l.price, (sellMap.get(l.price) ?? 0) + 1)
         }
-        const sellOrders = [...sellMap.entries()]
-            .map(([price, quantity]) => ({ price, quantity }))
-            .sort((a, b) => a.price - b.price)
 
-        // Group buy orders by price level
+
+        const sellOrders = Array.from(sellMap, ([price, quantity]) => ({ price, quantity }))
+        sellOrders.sort((a, b) => a.price - b.price)
+
         const buyMap = new Map<number, number>()
+
         for (const o of buyOrders) {
             buyMap.set(o.price, (buyMap.get(o.price) ?? 0) + o.quantity)
         }
-        const buyOrderLevels = [...buyMap.entries()]
-            .map(([price, quantity]) => ({ price, quantity }))
-            .sort((a, b) => b.price - a.price)
 
-        return Response.json({ sellOrders, buyOrders: buyOrderLevels, myBuyOrders })
-    } catch (error) {
+
+        const buyOrderLevels = Array.from(buyMap, ([price, quantity]) => ({ price, quantity }))
+        buyOrderLevels.sort((a, b) => b.price - a.price)
+
+        return Response.json({
+            sellOrders,
+            buyOrders: buyOrderLevels,
+            myBuyOrders,
+        })
+    }
+    catch (error) {
         console.error(error)
+
         return Response.json({ error: "Server error" }, { status: 500 })
     }
 }

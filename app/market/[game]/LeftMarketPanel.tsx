@@ -6,12 +6,19 @@ import { RARITIES } from "@/lib/rarity"
 
 type GameFilter = "all" | "CS2" | "Dota2" | "Rust" | "TF2"
 
+type GameOption = {
+    label: string,
+    value: GameFilter,
+    href: string,
+    icon: string,
+}
+
 //
 
 const SLIDER_MAX = 5000
 const FLOAT_MAX = 1
 
-const gameOptions: { label: string; value: GameFilter; href: string; icon: string }[] = [
+const gameOptions: GameOption[] = [
     { label: "CS2", value: "CS2", href: "/market/cs2", icon: "/cs2.png" },
     { label: "Dota 2", value: "Dota2", href: "/market/dota2", icon: "/dota.png" },
     { label: "Rust", value: "Rust", href: "/market/rust", icon: "/rust.png" },
@@ -44,6 +51,16 @@ const thumbClass = [
 
 //
 
+function sliderValue(input: string, fallback: number, max: number): number {
+    if (input === "") {
+        return fallback
+    }
+
+
+    return Math.min(parseFloat(input) || fallback, max)
+}
+
+
 function PriceInput({ value, onChange, placeholder, className }: {
     value: string,
     onChange: (v: string) => void,
@@ -57,7 +74,11 @@ function PriceInput({ value, onChange, placeholder, className }: {
             </span>
 
             <input
-                type="number" min={0} step={0.01} placeholder={placeholder} value={value}
+                type="number"
+                min={0}
+                step={0.01}
+                placeholder={placeholder}
+                value={value}
                 onChange={e => onChange(e.target.value)}
                 className="bg-transparent text-xs w-full outline-none"
             />
@@ -96,14 +117,14 @@ export default function LeftPanel({
     rarity: string | null,
     setRarity: (v: string | null) => void,
 }) {
-    const minVal = minPrice !== "" ? Math.min(parseFloat(minPrice) || 0, SLIDER_MAX) : 0
-    const maxVal = maxPrice !== "" ? Math.min(parseFloat(maxPrice) || SLIDER_MAX, SLIDER_MAX) : SLIDER_MAX
+    const minVal = sliderValue(minPrice, 0, SLIDER_MAX)
+    const maxVal = sliderValue(maxPrice, SLIDER_MAX, SLIDER_MAX)
     const fillLeft = (minVal / SLIDER_MAX) * 100
     const fillRight = 100 - (maxVal / SLIDER_MAX) * 100
 
     const showFloat = currentGame === "CS2" || currentGame === "TF2"
-    const minFloatVal = minFloat !== "" ? Math.min(parseFloat(minFloat) || 0, FLOAT_MAX) : 0
-    const maxFloatVal = maxFloat !== "" ? Math.min(parseFloat(maxFloat) || FLOAT_MAX, FLOAT_MAX) : FLOAT_MAX
+    const minFloatVal = sliderValue(minFloat, 0, FLOAT_MAX)
+    const maxFloatVal = sliderValue(maxFloat, FLOAT_MAX, FLOAT_MAX)
     const floatFillLeft = (minFloatVal / FLOAT_MAX) * 100
     const floatFillRight = 100 - (maxFloatVal / FLOAT_MAX) * 100
 
@@ -118,7 +139,10 @@ export default function LeftPanel({
 
                     {/* Games */}
                     <div className="px-3 pt-3 pb-1">
-                        <p className="text-[10px] font-semibold tracking-widest text-gray-500 uppercase mb-1.5">Games</p>
+                        <p className="text-[10px] font-semibold tracking-widest text-gray-500 uppercase mb-1.5">
+                            Games
+                        </p>
+
                         <div className="flex flex-col gap-0.5">
                             {gameOptions.map(({ label, value, href, icon }) => (
                                 <Link
@@ -130,7 +154,14 @@ export default function LeftPanel({
                                             : "hover:bg-accent"
                                     }`}
                                 >
-                                    <Image src={icon} alt={label} width={18} height={18} className="rounded-sm shrink-0" />
+                                    <Image
+                                        src={icon}
+                                        alt={label}
+                                        width={18}
+                                        height={18}
+                                        className="rounded-sm shrink-0"
+                                    />
+
                                     {label}
                                 </Link>
                             ))}
@@ -148,14 +179,18 @@ export default function LeftPanel({
                         {/* Dual-thumb slider */}
                         <div className="relative h-4 mx-1 mb-3">
                             <div className="absolute top-1.5 left-0 right-0 h-1 bg-accent rounded-full" />
-                          
+
                             <div
                                 className="absolute top-1.5 h-1 bg-special rounded-full"
                                 style={{ left: `${fillLeft}%`, right: `${fillRight}%` }}
                             />
 
                             <input
-                                type="range" min={0} max={SLIDER_MAX} step={1} value={minVal}
+                                type="range"
+                                min={0}
+                                max={SLIDER_MAX}
+                                step={1}
+                                value={minVal}
                                 onChange={e => {
                                     const v = parseInt(e.target.value)
                                     setMinPrice(v === 0 ? "" : String(v))
@@ -164,7 +199,11 @@ export default function LeftPanel({
                             />
 
                             <input
-                                type="range" min={0} max={SLIDER_MAX} step={1} value={maxVal}
+                                type="range"
+                                min={0}
+                                max={SLIDER_MAX}
+                                step={1}
+                                value={maxVal}
                                 onChange={e => {
                                     const v = parseInt(e.target.value)
                                     setMaxPrice(v === SLIDER_MAX ? "" : String(v))
@@ -176,13 +215,23 @@ export default function LeftPanel({
 
                         {/* Min / Max inputs */}
                         <div className="flex items-center gap-2">
-                            <PriceInput value={minPrice} onChange={setMinPrice} placeholder="0.00" className="flex-1" />
+                            <PriceInput
+                                value={minPrice}
+                                onChange={setMinPrice}
+                                placeholder="0.00"
+                                className="flex-1"
+                            />
 
                             <span className="text-gray-600 text-xs">
                                 –
                             </span>
 
-                            <PriceInput value={maxPrice} onChange={setMaxPrice} placeholder="All" className="flex-1" />
+                            <PriceInput
+                                value={maxPrice}
+                                onChange={setMaxPrice}
+                                placeholder="All"
+                                className="flex-1"
+                            />
                         </div>
                     </div>
 
@@ -199,7 +248,9 @@ export default function LeftPanel({
                                     <button
                                         key={value}
                                         onClick={() => setType(type === value ? null : value)}
-                                        className={`w-full h-8 text-xs rounded-sm button transition-colors text-left px-2.5 ${type === value ? "bg-special font-medium" : "bg-accent"}`}
+                                        className={`w-full h-8 text-xs rounded-sm button transition-colors text-left px-2.5 ${
+                                            type === value ? "bg-special font-medium" : "bg-accent"
+                                        }`}
                                     >
                                         {label}
                                     </button>
@@ -218,7 +269,10 @@ export default function LeftPanel({
                                 </p>
 
                                 {selectedRarity && (
-                                    <span className="text-[11px] font-medium" style={{ color: `#${selectedRarity.hex}` }}>
+                                    <span
+                                        className="text-[11px] font-medium"
+                                        style={{ color: `#${selectedRarity.hex}` }}
+                                    >
                                         {selectedRarity.label}
                                     </span>
                                 )}
@@ -231,7 +285,9 @@ export default function LeftPanel({
                                         title={label}
                                         aria-label={label}
                                         onClick={() => setRarity(rarity === key ? null : key)}
-                                        className={`flex-1 h-5 rounded-sm cursor-pointer transition-all ${rarity === key ? "ring-2 ring-white" : "opacity-70 hover:opacity-100"}`}
+                                        className={`flex-1 h-5 rounded-sm cursor-pointer transition-all ${
+                                            rarity === key ? "ring-2 ring-white" : "opacity-70 hover:opacity-100"
+                                        }`}
                                         style={{ backgroundColor: `#${hex}` }}
                                     />
                                 ))}
@@ -258,7 +314,11 @@ export default function LeftPanel({
                                 />
 
                                 <input
-                                    type="range" min={0} max={FLOAT_MAX} step={0.001} value={minFloatVal}
+                                    type="range"
+                                    min={0}
+                                    max={FLOAT_MAX}
+                                    step={0.001}
+                                    value={minFloatVal}
                                     onChange={e => {
                                         const v = parseFloat(e.target.value)
                                         setMinFloat(v === 0 ? "" : String(v))
@@ -267,7 +327,11 @@ export default function LeftPanel({
                                 />
 
                                 <input
-                                    type="range" min={0} max={FLOAT_MAX} step={0.001} value={maxFloatVal}
+                                    type="range"
+                                    min={0}
+                                    max={FLOAT_MAX}
+                                    step={0.001}
+                                    value={maxFloatVal}
                                     onChange={e => {
                                         const v = parseFloat(e.target.value)
                                         setMaxFloat(v === FLOAT_MAX ? "" : String(v))
@@ -280,7 +344,12 @@ export default function LeftPanel({
                             {/* Min / Max inputs */}
                             <div className="flex items-center gap-2">
                                 <input
-                                    type="number" min={0} max={1} step={0.001} placeholder="0.000" value={minFloat}
+                                    type="number"
+                                    min={0}
+                                    max={1}
+                                    step={0.001}
+                                    placeholder="0.000"
+                                    value={minFloat}
                                     onChange={e => setMinFloat(e.target.value)}
                                     className="flex-1 min-w-0 bg-accent rounded-sm px-2 h-7 text-xs outline-none"
                                 />
@@ -290,7 +359,12 @@ export default function LeftPanel({
                                 </span>
 
                                 <input
-                                    type="number" min={0} max={1} step={0.001} placeholder="1.000" value={maxFloat}
+                                    type="number"
+                                    min={0}
+                                    max={1}
+                                    step={0.001}
+                                    placeholder="1.000"
+                                    value={maxFloat}
                                     onChange={e => setMaxFloat(e.target.value)}
                                     className="flex-1 min-w-0 bg-accent rounded-sm px-2 h-7 text-xs outline-none"
                                 />
@@ -311,7 +385,9 @@ export default function LeftPanel({
                                     <button
                                         key={label}
                                         onClick={() => setWear(wear === label ? null : label)}
-                                        className={`w-full h-8 text-xs rounded-sm button transition-colors text-left px-2.5 ${wear === label ? "bg-special font-medium" : "bg-accent"}`}
+                                        className={`w-full h-8 text-xs rounded-sm button transition-colors text-left px-2.5 ${
+                                            wear === label ? "bg-special font-medium" : "bg-accent"
+                                        }`}
                                     >
                                         {label}
                                     </button>
@@ -358,7 +434,14 @@ export default function LeftPanel({
                                 currentGame === value ? "bg-special font-medium" : "bg-accent"
                             }`}
                         >
-                            <Image src={icon} alt={label} width={15} height={15} className="rounded-sm" />
+                            <Image
+                                src={icon}
+                                alt={label}
+                                width={15}
+                                height={15}
+                                className="rounded-sm"
+                            />
+
                             {label}
                         </Link>
                     ))}
@@ -367,13 +450,23 @@ export default function LeftPanel({
 
                 {/* Price */}
                 <div className="flex items-center justify-center gap-2 border border-gray-800 frame-shadow rounded-sm px-3 py-2 overflow-x-auto no-scrollbar">
-                    <PriceInput value={minPrice} onChange={setMinPrice} placeholder="0" className="w-24 shrink-0" />
+                    <PriceInput
+                        value={minPrice}
+                        onChange={setMinPrice}
+                        placeholder="0"
+                        className="w-24 shrink-0"
+                    />
 
                     <span className="text-gray-600 text-xs shrink-0">
                         –
                     </span>
 
-                    <PriceInput value={maxPrice} onChange={setMaxPrice} placeholder="All" className="w-24 shrink-0" />
+                    <PriceInput
+                        value={maxPrice}
+                        onChange={setMaxPrice}
+                        placeholder="All"
+                        className="w-24 shrink-0"
+                    />
                 </div>
             </div>
         </>

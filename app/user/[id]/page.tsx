@@ -5,10 +5,21 @@ import ProfileClient from "@/app/profile/ProfileClient"
 
 //
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+type Props = { params: Promise<{ id: string }> }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { id } = await params
-    const user = await prisma.user.findFirst({ where: { steam_id: id }, select: { name: true } })
-    if (!user) return {}
+
+    const user = await prisma.user.findFirst({
+        where: { steam_id: id },
+        select: { name: true },
+    })
+
+    if (!user) {
+        return {}
+    }
+
+
     return {
         title: `${user.name ?? "Trader"}'s Profile`,
         robots: { index: false, follow: false },
@@ -17,7 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 //
 
-export default async function PublicProfile({ params }: { params: Promise<{ id: string }> }) {
+export default async function PublicProfile({ params }: Props) {
     const { id } = await params
 
     const user = await prisma.user.findFirst({
@@ -33,24 +44,50 @@ export default async function PublicProfile({ params }: { params: Promise<{ id: 
         },
     })
 
+    if (!user) {
+        redirect("/")
+    }
 
-    if (!user) redirect("/")
 
     const [purchaseCount, saleCount, listings] = await Promise.all([
         prisma.purchase.count({ where: { buyer: { steam_id: id }, status: "completed" } }),
         prisma.purchase.count({ where: { seller: { steam_id: id }, status: "completed" } }),
         prisma.item_listing.findMany({
             where: { userId: user.id },
-            select: { id: true, assetId: true, marketName: true, price: true, icon: true, hexColor: true, game: true, commodity: true },
+            select: {
+                id: true,
+                assetId: true,
+                marketName: true,
+                price: true,
+                icon: true,
+                hexColor: true,
+                game: true,
+                commodity: true,
+            },
             orderBy: { createdAt: "desc" },
         }),
     ])
 
+    const assetIds = listings.map(l => l.assetId)
+
     const floats = listings.length > 0
-        ? await prisma.item_float.findMany({ where: { assetId: { in: listings.map(l => l.assetId) } }, select: { assetId: true, floatValue: true, stickers: true } })
+        ? await prisma.item_float.findMany({
+            where: { assetId: { in: assetIds } },
+            select: { assetId: true, floatValue: true, stickers: true },
+        })
         : []
-    const floatMap = new Map(floats.map(f => [f.assetId, { floatValue: f.floatValue, stickers: f.stickers }]))
-    const listingsWithFloat = listings.map(l => ({ ...l, floatValue: floatMap.get(l.assetId)?.floatValue ?? null, stickers: floatMap.get(l.assetId)?.stickers ?? null }))
+
+    const floatMap = new Map(floats.map(f => [f.assetId, f]))
+
+    const listingsWithFloat = listings.map(l => {
+        const float = floatMap.get(l.assetId)
+
+        return {
+            ...l,
+            floatValue: float?.floatValue ?? null,
+            stickers: float?.stickers ?? null,
+        }
+    })
 
     return (
         <ProfileClient
@@ -66,4 +103,3 @@ export default async function PublicProfile({ params }: { params: Promise<{ id: 
         />
     )
 }
-

@@ -3,6 +3,12 @@ import { authOptions } from '@/lib/auth'
 import { fetchItemPrice } from '@/lib/steam'
 import { prisma } from '@/lib/db'
 
+//
+
+type PriceRequest = { market_name: string, market_hash_name: string, game: string }
+
+//
+
 export async function POST(request: Request) {
     const session = await getServerSession(authOptions)
 
@@ -10,16 +16,21 @@ export async function POST(request: Request) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    let items: { market_name: string; market_hash_name: string; game: string }[]
+
+    let items: PriceRequest[]
+
     try {
         ({ items } = await request.json())
-    } catch {
+    }
+    catch {
         return Response.json({ error: 'Invalid request body' }, { status: 400 })
     }
+
 
     if (!Array.isArray(items) || items.length === 0) {
         return Response.json({ error: 'items must be a non-empty array' }, { status: 400 })
     }
+
 
     const encoder = new TextEncoder()
 
@@ -27,8 +38,7 @@ export async function POST(request: Request) {
     weekAgoUtc.setDate(weekAgoUtc.getDate() - 7)
     weekAgoUtc.setUTCHours(0, 0, 0, 0)
 
-    // Load all cached prices for the requested items
-    const marketNames = items.map((i: { market_name: string }) => i.market_name)
+    const marketNames = items.map(item => item.market_name)
     const cached = await prisma.item.findMany({
         where: { marketName: { in: marketNames } },
         select: { marketName: true, price: true, updatedAt: true },
@@ -37,30 +47,41 @@ export async function POST(request: Request) {
 
     const stream = new ReadableStream({
         async start(controller) {
-            await Promise.all(items.map(async (item: { market_name: string, market_hash_name: string, game: string }) => {
+            function send(marketName: string, price: number) {
+                const line = JSON.stringify({ market_name: marketName, price }) + '\n'
+
+                controller.enqueue(encoder.encode(line))
+            }
+
+
+            await Promise.all(items.map(async item => {
                 const hit = cacheMap.get(item.market_name)
 
-                // Return cached price if it was updated today (skip if cached as 0 — stale/broken)
+                // A cached price of 0 is a failed lookup, so it isn't trusted.
                 if (hit && hit.price > 0 && hit.updatedAt >= weekAgoUtc) {
-                    controller.enqueue(encoder.encode(
-                        JSON.stringify({ market_name: item.market_name, price: hit.price }) + '\n'
-                    ))
+                    send(item.market_name, hit.price)
+
                     return
                 }
 
+
                 const price = await fetchItemPrice(item.market_hash_name, item.game) ?? 0
-   
+
                 if (price > 0) {
                     await prisma.item.upsert({
                         where: { marketName: item.market_name },
                         update: { price },
-                        create: { marketName: item.market_name, marketHashName: item.market_hash_name, price, game: item.game }
+                        create: {
+                            marketName: item.market_name,
+                            marketHashName: item.market_hash_name,
+                            price,
+                            game: item.game,
+                        },
                     })
                 }
 
-                controller.enqueue(encoder.encode(
-                    JSON.stringify({ market_name: item.market_name, price }) + '\n'
-                ))
+
+                send(item.market_name, price)
             }))
 
             controller.close()

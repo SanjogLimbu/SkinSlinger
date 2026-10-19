@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Stop Turbopack from inferring C:\Users\Elon (stray package-lock.json there) as the root
+  // Stops Turbopack treating C:\Users\Elon, which has a stray package-lock.json, as the root.
   turbopack: {
     root: __dirname,
   },

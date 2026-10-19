@@ -64,7 +64,14 @@ export const metadata: Metadata = {
         title: 'No KYC Skins Marketplace - Buy & Sell Steam Skins with Crypto | SkinSlinger',
         description,
         url: '/',
-        images: [{ url: '/logo.png', width: 512, height: 512, alt: 'SkinSlinger' }],
+        images: [
+            {
+                url: '/logo.png',
+                width: 512,
+                height: 512,
+                alt: 'SkinSlinger',
+            },
+        ],
     },
     twitter: {
         card: 'summary',
@@ -83,7 +90,10 @@ const websiteJsonLd = {
     "url": base,
     "potentialAction": {
         "@type": "SearchAction",
-        "target": { "@type": "EntryPoint", "urlTemplate": `${base}/market/cs2?search={search_term_string}` },
+        "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": `${base}/market/cs2?search={search_term_string}`,
+        },
         "query-input": "required name=search_term_string",
     },
 }
@@ -121,42 +131,66 @@ const faq = {
         {
             "@type": "Question",
             "name": "How are the fees so low?",
-            "acceptedAnswer": { "@type": "Answer", "text": "As we only use crypto, we do not have to worry about using a payment processor. We can use our own custom-made payment processor to cut out the middleman." },
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "As we only use crypto, we do not have to worry about using a payment processor. We can use our own custom-made payment processor to cut out the middleman.",
+            },
         },
         {
             "@type": "Question",
             "name": "What is a no KYC skins marketplace?",
-            "acceptedAnswer": { "@type": "Answer", "text": "A no KYC skins marketplace lets you buy and sell Steam skins without providing any identity documents or personal verification. SkinSlinger is a no KYC skins marketplace — you sign up with just a Steam account, no passport, no ID, no selfies required." },
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A no KYC skins marketplace lets you buy and sell Steam skins without providing any identity documents or personal verification. SkinSlinger is a no KYC skins marketplace — you sign up with just a Steam account, no passport, no ID, no selfies required.",
+            },
         },
         {
             "@type": "Question",
             "name": "Is KYC required on withdrawals?",
-            "acceptedAnswer": { "@type": "Answer", "text": "No. SkinSlinger requires no identity verification (KYC) at all — not for sign-up, not for trading, and not for withdrawals." },
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. SkinSlinger requires no identity verification (KYC) at all — not for sign-up, not for trading, and not for withdrawals.",
+            },
         },
         {
             "@type": "Question",
             "name": "How do I pay on SkinSlinger?",
-            "acceptedAnswer": { "@type": "Answer", "text": "SkinSlinger accepts USDC on the Polygon network. Deposit crypto and use your balance to buy skins instantly." },
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "SkinSlinger accepts USDC on the Polygon network. Deposit crypto and use your balance to buy skins instantly.",
+            },
         },
         {
             "@type": "Question",
             "name": "What games does SkinSlinger support?",
-            "acceptedAnswer": { "@type": "Answer", "text": "SkinSlinger supports CS2 (Counter-Strike 2), Dota 2, Rust, and Team Fortress 2." },
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "SkinSlinger supports CS2 (Counter-Strike 2), Dota 2, Rust, and Team Fortress 2.",
+            },
         },
         {
             "@type": "Question",
             "name": "Are my skins safe?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Yes. We only ask for your Steam trade URL to check your inventory and trade eligibility. We have no direct access to your inventory or skins. The marketplace is P2P so you trade your skins directly with other players rather than giving it to a bot." },
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. We only ask for your Steam trade URL to check your inventory and trade eligibility. We have no direct access to your inventory or skins. The marketplace is P2P so you trade your skins directly with other players rather than giving it to a bot.",
+            },
         },
         {
             "@type": "Question",
             "name": "How long does it take to deposit/withdraw?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Deposits and withdrawals are automatic and should take less than 5 minutes to detect and confirm." },
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Deposits and withdrawals are automatic and should take less than 5 minutes to detect and confirm.",
+            },
         },
         {
             "@type": "Question",
             "name": "How are 'Market' prices determined?",
-            "acceptedAnswer": { "@type": "Answer", "text": "We look at prices from other market places and average them out. If the item does not exist on other market places, we use prices from the Steam marketplace." },
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "We look at prices from other market places and average them out. If the item does not exist on other market places, we use prices from the Steam marketplace.",
+            },
         },
     ],
 }
@@ -185,11 +219,16 @@ function Hero() {
                     Trade CS2, Dota 2, Rust and TF2 skins directly with other players.
                 </p>
             </div>
-            
+
             <div className="flex gap-3 text-sm flex-wrap justify-center">
                 {games.map(({ label, icon, href }) => (
-                    <Link key={label} href={href} className="bg-secondary px-3 py-1.5 rounded-sm flex items-center gap-1.5 text-gray-300 button">
+                    <Link
+                        key={label}
+                        href={href}
+                        className="bg-secondary px-3 py-1.5 rounded-sm flex items-center gap-1.5 text-gray-300 button"
+                    >
                         <Image src={icon} alt={label} width={16} height={16} />
+
                         {label}
                     </Link>
                 ))}
@@ -213,39 +252,49 @@ function Features() {
             </div>
 
             <div className="bg-secondary rounded-sm w-full max-w-sm">
-                {fees.map(({ label, value, icon, tiers }, i) => (
-                    <div key={label} className={`px-5 py-3 ${i < fees.length - 1 ? 'border-b border-gray-700/60' : ''}`}>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Image src={icon} alt="" width={18} height={18} className="opacity-60 invert" />
-                                
-                                <span className="text-sm text-gray-400">
-                                    {label}
+                {fees.map(({ label, value, icon, tiers }, i) => {
+                    const border = i < fees.length - 1 ? 'border-b border-gray-700/60' : ''
+
+                    return (
+                        <div key={label} className={`px-5 py-3 ${border}`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Image
+                                        src={icon}
+                                        alt=""
+                                        width={18}
+                                        height={18}
+                                        className="opacity-60 invert"
+                                    />
+
+                                    <span className="text-sm text-gray-400">
+                                        {label}
+                                    </span>
+                                </div>
+
+                                <span className="font-semibold text-special">
+                                    {value}
                                 </span>
                             </div>
 
-                            <span className="font-semibold text-special">
-                                {value}
-                            </span>
+                            {tiers && (
+                                <div className="mt-2 ml-7.5 flex flex-col gap-1">
+                                    {tiers.map(({ rate, threshold }) => (
+                                        <div key={threshold} className="flex items-center justify-between">
+                                            <span className="text-xs text-gray-500">
+                                                {threshold}
+                                            </span>
+
+                                            <span className="text-xs font-medium text-gray-300">
+                                                {rate}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-
-                        {tiers && (
-                            <div className="mt-2 ml-7.5 flex flex-col gap-1">
-                                {tiers.map(({ rate, threshold }) => (
-                                    <div key={threshold} className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-500"
-                                            >{threshold}
-                                        </span>
-
-                                        <span className="text-xs font-medium text-gray-300">
-                                            {rate}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ))}
+                    )
+                })}
             </div>
 
             <div className="w-full max-w-2xl mt-4">
@@ -282,7 +331,7 @@ function Features() {
 
 function Explanation() {
     return (
-          <div className="w-full max-w-lg mx-auto px-4 pt-12 pb-8">
+        <div className="w-full max-w-lg mx-auto px-4 pt-12 pb-8">
             <div className="flex flex-col items-center gap-1 mb-8">
                 <p className="eyebrow">
                     Escrowed P2P trades
@@ -301,7 +350,9 @@ function Explanation() {
                                 {i + 1}
                             </span>
 
-                            {i < steps.length - 1 && <span className="w-px flex-1 bg-gray-700/60 my-1" />}
+                            {i < steps.length - 1 && (
+                                <span className="w-px flex-1 bg-gray-700/60 my-1" />
+                            )}
                         </div>
 
                         <div className="pb-6">
@@ -355,7 +406,10 @@ function Faq() {
 function Footer() {
     return (
         <footer className="py-10 px-6 bg-black/20 relative">
-            <div className="strip absolute top-0 left-0 right-0 opacity-60" style={{ height: 2, borderRadius: 0 }} />
+            <div
+                className="strip absolute top-0 left-0 right-0 opacity-60"
+                style={{ height: 2, borderRadius: 0 }}
+            />
 
             <div className="max-w-2xl mx-auto flex flex-col items-center gap-6">
                 <div className="flex items-center gap-2">
@@ -367,11 +421,17 @@ function Footer() {
                 </div>
 
                 <div className="flex gap-6">
-                    <a href="mailto:support@skinslinger.com" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                    <a
+                        href="mailto:support@skinslinger.com"
+                        className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    >
                         Support
                     </a>
 
-                    <a href="mailto:management@skinslinger.com" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                    <a
+                        href="mailto:management@skinslinger.com"
+                        className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    >
                         Business Contact
                     </a>
                 </div>
@@ -394,17 +454,24 @@ function Footer() {
     )
 }
 
+
 export default function Home() {
     return (
         <div className="overflow-y-auto h-full w-full no-scrollbar">
             <Hero />
+
             <Features />
+
             <Explanation />
+
             <Faq />
+
             <Footer />
 
             <JsonLd data={websiteJsonLd} />
+
             <JsonLd data={organizationJsonLd} />
+
             <JsonLd data={faq} />
         </div>
     )

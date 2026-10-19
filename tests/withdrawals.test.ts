@@ -5,7 +5,12 @@ import { processWithdrawal } from "@/lib/crypto/withdrawals"
 
 const writeContract = vi.hoisted(() => vi.fn())
 
-vi.mock("viem", async importOriginal => ({ ...(await importOriginal<typeof import("viem")>()), createWalletClient: () => ({ writeContract }) }))
+vi.mock("viem", async importOriginal => {
+    const viem = await importOriginal<typeof import("viem")>()
+
+    return { ...viem, createWalletClient: () => ({ writeContract }) }
+})
+
 vi.mock("viem/accounts", () => ({ privateKeyToAccount: () => ({}) }))
 
 //
@@ -61,9 +66,17 @@ describe("processWithdrawal", () => {
     it("Sends the amount minus the fee to the user, and the fee to the profit wallet.", async () => {
         expect(await withdraw(100)).toEqual({ transactionHash: "0xhash", usdcAmount: 97.5 })
 
-        // USDC has 6 decimals, so $97.50 is 97,500,000 units
-        expect(writeContract).toHaveBeenNthCalledWith(1, expect.objectContaining({ address: USDC, functionName: "transfer", args: [WALLET, 97_500_000n] }))
-        expect(writeContract).toHaveBeenNthCalledWith(2, expect.objectContaining({ address: USDC, functionName: "transfer", args: [PROFIT_WALLET, 2_500_000n] }))
+        // USDC has 6 decimals, so $97.50 is 97,500,000 units.
+        expect(writeContract).toHaveBeenNthCalledWith(1, expect.objectContaining({
+            address: USDC,
+            functionName: "transfer",
+            args: [WALLET, 97_500_000n],
+        }))
+        expect(writeContract).toHaveBeenNthCalledWith(2, expect.objectContaining({
+            address: USDC,
+            functionName: "transfer",
+            args: [PROFIT_WALLET, 2_500_000n],
+        }))
     })
 
 

@@ -10,7 +10,7 @@ const base = getBaseUrl()
 //
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    // One item type page per unique market name (these are the indexed pages)
+    // One page per unique market name, since those are the indexed pages.
     const groups = await prisma.item_listing.groupBy({
         by: ['marketName'],
         _min: { createdAt: true },
@@ -30,13 +30,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
     }))
 
+    const marketUrls: MetadataRoute.Sitemap = ['cs2', 'dota2', 'rust', 'tf2'].map(game => ({
+        url: `${base}/market/${game}`,
+        lastModified: new Date(),
+        changeFrequency: 'hourly',
+        priority: 0.9,
+    }))
+
     return [
-        { url: `${base}/`,             lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 },
-        { url: `${base}/market/cs2`,   lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.9 },
-        { url: `${base}/market/dota2`, lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.9 },
-        { url: `${base}/market/rust`,  lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.9 },
-        { url: `${base}/market/tf2`,   lastModified: new Date(), changeFrequency: 'hourly',  priority: 0.9 },
-        { url: `${base}/blog`,         lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.7 },
+        {
+            url: `${base}/`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 1.0,
+        },
+        ...marketUrls,
+        {
+            url: `${base}/blog`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.7,
+        },
         ...blogUrls,
         ...itemUrls,
     ]

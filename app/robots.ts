@@ -8,7 +8,16 @@ export default function robots(): MetadataRoute.Robots {
             {
                 userAgent: '*',
                 allow: '/',
-                disallow: ['/inventory', '/orders', '/basket', '/finance', '/profile', '/reset-password', '/status', '/api/'],
+                disallow: [
+                    '/inventory',
+                    '/orders',
+                    '/basket',
+                    '/finance',
+                    '/profile',
+                    '/reset-password',
+                    '/status',
+                    '/api/',
+                ],
             },
         ],
         sitemap: "https://skinslinger.com/sitemap.xml",

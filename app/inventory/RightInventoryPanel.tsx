@@ -20,8 +20,18 @@ function ListPrompt({ totalValue, itemCount, onConfirm, setShowPrompt, error, su
     error: string
     submitting: boolean
 }) {
+    function close() {
+        if (!submitting) {
+            setShowPrompt(false)
+        }
+    }
+
+
     return (
-        <Prompt title="Confirm listing" onClose={() => { if (!submitting) setShowPrompt(false); }}>
+        <Prompt
+            title="Confirm listing"
+            onClose={close}
+        >
             <div className="flex flex-col gap-2 text-sm">
                 <div className="flex justify-between">
                     <span className="opacity-60">
@@ -65,17 +75,26 @@ function ListPrompt({ totalValue, itemCount, onConfirm, setShowPrompt, error, su
             )}
 
             <div className="flex gap-3">
-                <button className="bg-special button flex-1 h-10 rounded-sm" onClick={onConfirm} disabled={submitting}>
+                <button
+                    className="bg-special button flex-1 h-10 rounded-sm"
+                    onClick={onConfirm}
+                    disabled={submitting}
+                >
                     {submitting ? "Listing..." : "Confirm"}
                 </button>
 
-                <button className="bg-accent button flex-1 h-10 rounded-sm" onClick={() => setShowPrompt(false)} disabled={submitting}>
+                <button
+                    className="bg-accent button flex-1 h-10 rounded-sm"
+                    onClick={() => setShowPrompt(false)}
+                    disabled={submitting}
+                >
                     Cancel
                 </button>
             </div>
         </Prompt>
     )
 }
+
 
 export default function RightPanel({ selling, setSelling, onListed, livePrices, inventoryToken }: {
     selling: SteamItem[],
@@ -94,19 +113,50 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
 
     function applyInstantSell() {
         const next: Record<string, string> = { ...priceMap }
+
         for (const item of stackedQueue) {
             const bid = bidMap[item.market_name]
-            if (bid) next[item.market_name] = bid.toFixed(2)
+
+            if (bid) {
+                next[item.market_name] = bid.toFixed(2)
+            }
         }
+
+
         setPriceMap(next)
     }
+
+
+    function applyDiscount(discount: number) {
+        const next: Record<string, string> = {}
+
+        for (const item of stackedQueue) {
+            const base = marketPrice(item)
+            next[item.market_name] = (base * (1 - discount / 100)).toFixed(2)
+        }
+
+
+        setPriceMap(next)
+    }
+
+
+    function openListPrompt() {
+        setListError("")
+        setShowPrompt(true)
+    }
+
+
+    function sellFromQueue() {
+        setMobileQueueOpen(false)
+        openListPrompt()
+    }
+
 
     async function listItems() {
         const items = stackedQueue.map(item => ({
             assetId: item.assetId,
             marketName: item.market_name,
-            // Same source as the displayed price — item.price is a stale snapshot
-            // that can be 0 if the live price hadn't resolved when the item was queued.
+            // item.price can be a stale 0, so this uses the price shown to the user.
             price: parseFloat(priceMap[item.market_name] ?? defaultPrice(item)),
             game: item.game,
             commodity: item.commodity,
@@ -115,21 +165,19 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
             hexColor: item.hexColor,
         }))
 
-        // The server rejects the whole batch on any invalid price — catch it here
-        // so the user sees why instead of a silent no-op.
+        // The server rejects the whole batch on one bad price, so this tells the user why.
         if (items.some(i => !Number.isFinite(i.price) || i.price <= 0)) {
             setListError("Every item needs a price above $0.00.")
+
             return
         }
+
 
         const ids = selling.map(i => i.assetId)
         setListError("")
         setSubmitting(true)
 
-        // Wait for the listing to be persisted before refreshing. The optimistic hide
-        // only knows each stack's representative assetId, but the server lists every
-        // individual one (commodity stacks resolve N distinct assetIds). Refreshing
-        // after the POST commits lets the server-side filter remove them all.
+        // Refreshing only after the POST lets the server hide every listed copy of a stack.
         try {
             const response = await fetch("/api/listings", {
                 method: "POST",
@@ -140,19 +188,25 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
             if (!response.ok) {
                 const data = await response.json().catch(() => null)
                 setListError(data?.error ?? "Listing failed — please try again.")
+
                 return
             }
-        } catch {
+        }
+        catch {
             setListError("Network error — please try again.")
+
             return
-        } finally {
+        }
+        finally {
             setSubmitting(false)
         }
+
 
         setSelling([])
         setShowPrompt(false)
         onListed(ids)
     }
+
 
     function remove(market_name: string) {
         const index = selling.findIndex(x => x.market_name === market_name)
@@ -163,7 +217,7 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
         }
     }
 
-    
+
     const stackedQueue = (() => {
         const result: (SteamItem & { quantity: number })[] = []
         const commodityMap = new Map<string, SteamItem & { quantity: number }>()
@@ -171,104 +225,121 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
         for (const item of selling) {
             if (item.commodity) {
                 const existing = commodityMap.get(item.market_name)
+
                 if (existing) {
                     existing.quantity += 1
-                } else {
+                }
+                else {
                     const entry = { ...item, quantity: 1 }
                     commodityMap.set(item.market_name, entry)
                     result.push(entry)
                 }
-            } else {
+            }
+            else {
                 result.push({ ...item, quantity: 1 })
             }
         }
 
+
         return result
     })()
-    // Auto-fetch buy order prices for new queue items
+
+
     useEffect(() => {
-        for (const item of stackedQueue) {
-            if (fetchedRef.current.has(item.market_name)) continue
-            fetchedRef.current.add(item.market_name)
-            fetch(`/api/market/orders?marketName=${encodeURIComponent(item.market_name)}`)
-                .then(r => r.json())
-                .then(data => {
-                    const highestBid: number | null = data.buyOrders?.[0]?.price ?? null
-                    setBidMap(prev => ({ ...prev, [item.market_name]: highestBid }))
-                    if (highestBid) {
-                        setPriceMap(prev => {
-                            if (prev[item.market_name] !== undefined) return prev
-                            return { ...prev, [item.market_name]: highestBid.toFixed(2) }
-                        })
+        async function fetchBid(marketName: string) {
+            const url = `/api/market/orders?marketName=${encodeURIComponent(marketName)}`
+            const response = await fetch(url)
+            const data = await response.json()
+            const highestBid: number | null = data.buyOrders?.[0]?.price ?? null
+
+            setBidMap(prev => ({ ...prev, [marketName]: highestBid }))
+
+            if (highestBid) {
+                setPriceMap(prev => {
+                    if (prev[marketName] !== undefined) {
+                        return prev
                     }
+
+
+                    return { ...prev, [marketName]: highestBid.toFixed(2) }
                 })
+            }
+        }
+
+
+        for (const item of stackedQueue) {
+            if (fetchedRef.current.has(item.market_name)) {
+                continue
+            }
+
+
+            fetchedRef.current.add(item.market_name)
+            fetchBid(item.market_name)
         }
     }, [stackedQueue])
 
-    // Highest price the server accepts for an item, or null when it has no market price yet
+
+    function marketPrice(item: SteamItem): number {
+        const price = livePrices.get(item.market_name) ?? item.price
+
+        return parseFloat(price.toFixed(2))
+    }
+
+
+    // The same limits as the server's, so the user can't enter a price it would reject.
     function maxPrice(item: SteamItem): number | null {
         const priceOf = (name: string) => livePrices.get(name) ?? 0
 
         return maxListingPrice(priceOf(item.market_name), item.stickers, priceOf)
     }
 
-    // Lowest price the server accepts for an item, or null when it has no market price yet
+
     function minPrice(item: SteamItem): number | null {
         return minListingPrice(livePrices.get(item.market_name) ?? 0)
     }
 
-    function defaultPrice(item: SteamItem & { quantity: number }): string {
-        const livePrice = parseFloat((livePrices.get(item.market_name) ?? item.price).toFixed(2))
-        return livePrice.toFixed(2)
+
+    function defaultPrice(item: SteamItem): string {
+        return marketPrice(item).toFixed(2)
     }
+
 
     const totalValue = stackedQueue.reduce((sum, item) => {
         const price = parseFloat(priceMap[item.market_name] ?? defaultPrice(item))
+
         return sum + (isNaN(price) ? 0 : price) * item.quantity
     }, 0)
 
     const totalItems = stackedQueue.reduce((sum, item) => sum + item.quantity, 0)
 
+    const allHaveBids = stackedQueue.every(item => bidMap[item.market_name])
+    const allAtBid = stackedQueue.every(item => {
+        const bid = bidMap[item.market_name]
 
-    // Shared by the mobile queue modal and the desktop sidebar
+        return bid && priceMap[item.market_name] === bid.toFixed(2)
+    })
+
+
     const discountButtons = (
         <div className="flex gap-1">
             {discounts.map(d => (
                 <button
                     key={d}
-                    onClick={() => {
-                        const next: Record<string, string> = {}
-
-                        for (const item of stackedQueue) {
-                            const base = parseFloat((livePrices.get(item.market_name) ?? item.price).toFixed(2))
-                            next[item.market_name] = (base * (1 - d / 100)).toFixed(2)
-                        }
-
-
-                        setPriceMap(next)
-                    }}
+                    onClick={() => applyDiscount(d)}
                     className="flex-1 h-7 rounded-sm text-xs cursor-pointer bg-primary opacity-60 hover:opacity-100 transition-colors"
                 >
                     {d === 0 ? '0%' : `-${d}%`}
                 </button>
             ))}
 
-            {stackedQueue.every(item => bidMap[item.market_name]) && (() => {
-                const allMatch = stackedQueue.every(item => {
-                    const bid = bidMap[item.market_name]
-                    return bid && priceMap[item.market_name] === bid.toFixed(2)
-                })
-
-
-                return (
-                    <button
-                        onClick={applyInstantSell}
-                        className={`flex-1 h-7 rounded-sm text-xs cursor-pointer transition-colors ${allMatch ? 'bg-special' : 'bg-primary opacity-60 hover:opacity-100'}`}
-                    >
-                        Instant
-                    </button>
-                )
-            })()}
+            {allHaveBids && (
+                <button
+                    onClick={applyInstantSell}
+                    className={`flex-1 h-7 rounded-sm text-xs cursor-pointer transition-colors ${allAtBid ? 'bg-special' : 'bg-primary opacity-60 hover:opacity-100'}`}
+                >
+                    Instant
+                </button>
+            )}
         </div>
     )
 
@@ -281,7 +352,7 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
             hexColor={item.hexColor}
             priceStr={priceMap[item.market_name] ?? defaultPrice(item)}
             setPriceStr={(val) => setPriceMap(prev => ({ ...prev, [item.market_name]: val }))}
-            marketPrice={parseFloat((livePrices.get(item.market_name) ?? item.price).toFixed(2))}
+            marketPrice={marketPrice(item)}
             minPrice={minPrice(item)}
             maxPrice={maxPrice(item)}
             bidPrice={bidMap[item.market_name] ?? null}
@@ -293,7 +364,14 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
     return (
         <>
             {showPrompt && (
-                <ListPrompt totalValue={totalValue} itemCount={totalItems} onConfirm={listItems} setShowPrompt={setShowPrompt} error={listError} submitting={submitting} />
+                <ListPrompt
+                    totalValue={totalValue}
+                    itemCount={totalItems}
+                    onConfirm={listItems}
+                    setShowPrompt={setShowPrompt}
+                    error={listError}
+                    submitting={submitting}
+                />
             )}
 
 
@@ -319,13 +397,16 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
                     </div>
 
                     <div className="flex gap-2 mt-3">
-                        <button onClick={() => setMobileQueueOpen(false)} className="bg-negative button rounded-sm w-12 h-12 shrink-0 flex items-center justify-center text-lg">
+                        <button
+                            onClick={() => setMobileQueueOpen(false)}
+                            className="bg-negative button rounded-sm w-12 h-12 shrink-0 flex items-center justify-center text-lg"
+                        >
                             ✕
                         </button>
 
                         <button
                             className="bg-special h-12 flex-1 rounded-sm button font-medium"
-                            onClick={() => { setMobileQueueOpen(false); setListError(""); setShowPrompt(true); }}
+                            onClick={sellFromQueue}
                         >
                             SELL ITEMS
                         </button>
@@ -347,11 +428,17 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
                         </span>
                     </div>
 
-                    <button onClick={() => setMobileQueueOpen(true)} className="bg-accent px-4 h-10 rounded-sm button text-sm shrink-0">
+                    <button
+                        onClick={() => setMobileQueueOpen(true)}
+                        className="bg-accent px-4 h-10 rounded-sm button text-sm shrink-0"
+                    >
                         Adjust
                     </button>
 
-                    <button onClick={() => { setListError(""); setShowPrompt(true); }} className="bg-special px-4 h-10 rounded-sm button text-sm font-medium shrink-0">
+                    <button
+                        onClick={openListPrompt}
+                        className="bg-special px-4 h-10 rounded-sm button text-sm font-medium shrink-0"
+                    >
                         Sell Items
                     </button>
                 </div>
@@ -386,7 +473,7 @@ export default function RightPanel({ selling, setSelling, onListed, livePrices, 
 
                 <button
                     className={`mt-210 rounded-sm transition-all overflow-y-auto h-20 w-95 ${stackedQueue.length > 0 ? "bg-special" : "bg-accent"} absolute flex justify-center items-center cursor-pointer`}
-                    onClick={() => { setListError(""); setShowPrompt(true); }}
+                    onClick={openListPrompt}
                 >
                     SELL ITEMS
                 </button>

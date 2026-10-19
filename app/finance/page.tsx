@@ -17,11 +17,8 @@ export const metadata: Metadata = {
 export default async function Finance() {
     const session = await getServerSession(authOptions)
 
-    // Funds from sales still inside their 8-day clearing window — held, not yet spendable.
     let pendingBalance = 0
 
-    // Funds already spent on purchases that haven't completed yet (pending or clearing) —
-    // already deducted from cash, so not part of the available balance.
     let lockedBalance = 0
 
     if (session?.user?.id) {
@@ -30,21 +27,30 @@ export default async function Finance() {
             _sum: { price: true },
         })
 
-
         pendingBalance = held._sum.price ?? 0
 
         const locked = await prisma.purchase.aggregate({
-            where: { buyerId: session.user.id, status: { in: ["pending", "holding"] } },
+            where: {
+                buyerId: session.user.id,
+                status: { in: ["pending", "holding"] },
+            },
             _sum: { price: true },
         })
-
 
         lockedBalance = locked._sum.price ?? 0
     }
 
+
     const withdrawalFee = await getWithdrawalFee(session?.user?.id)
 
-
-    return <Suspense><FinanceClient pendingBalance={pendingBalance} lockedBalance={lockedBalance} withdrawalFee={withdrawalFee} /></Suspense>
+    return (
+        <Suspense>
+            <FinanceClient
+                pendingBalance={pendingBalance}
+                lockedBalance={lockedBalance}
+                withdrawalFee={withdrawalFee}
+            />
+        </Suspense>
+    )
 }
 

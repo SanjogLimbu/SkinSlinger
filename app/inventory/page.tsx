@@ -26,7 +26,9 @@ export default async function Inventory() {
     }
 
 
-    const user = await prisma.user.findUnique({ where: { email: session.user!.email! } })
+    const user = await prisma.user.findUnique({
+        where: { email: session.user!.email! },
+    })
 
     if (!user) {
         redirect("/")
@@ -44,64 +46,94 @@ export default async function Inventory() {
 
     const COOLDOWN_MS = 20 * 60 * 1000
     const now = new Date()
-    const cacheValid = user.lastInventoryRefresh && (now.getTime() - user.lastInventoryRefresh.getTime()) < COOLDOWN_MS
+    const lastRefresh = user.lastInventoryRefresh
+    const cacheValid = lastRefresh && now.getTime() - lastRefresh.getTime() < COOLDOWN_MS
 
     let rawInventory: SteamItem[] = []
 
     if (user.steam_id) {
         if (cacheValid && user.inventoryCache) {
             rawInventory = user.inventoryCache as SteamItem[]
-        } 
+        }
         else {
             const fetched = await getInventory(user.steam_id)
 
             if (fetched.length > 0) {
-                rawInventory = [...new Map(fetched.map(i => [i.assetId, i])).values()]
+                const byAssetId = new Map(fetched.map(i => [i.assetId, i]))
+                rawInventory = [...byAssetId.values()]
 
                 await prisma.user.update({
                     where: { id: user.id },
-                    data: { lastInventoryRefresh: now, inventoryCache: rawInventory as any },
+                    data: {
+                        lastInventoryRefresh: now,
+                        inventoryCache: rawInventory as any,
+                    },
                 })
             }
         }
     }
 
+
     const [listings, pendingSales] = await Promise.all([
-        prisma.item_listing.findMany({ where: { userId: user.id }, select: { assetId: true } }),
-        prisma.purchase.findMany({ where: { sellerId: user.id, status: 'pending' }, select: { assetId: true } }),
+        prisma.item_listing.findMany({
+            where: { userId: user.id },
+            select: { assetId: true },
+        }),
+        prisma.purchase.findMany({
+            where: { sellerId: user.id, status: { in: ['pending', 'holding'] } },
+            select: { assetId: true },
+        }),
     ])
-    const listedAssetIds = new Set([...listings.map(l => l.assetId), ...pendingSales.map(p => p.assetId)])
+
+    const listedIds = listings.map(l => l.assetId)
+    const pendingSaleIds = pendingSales.map(p => p.assetId)
+    const listedAssetIds = new Set([...listedIds, ...pendingSaleIds])
 
 
-    // Cache float data from CS2 inventory items (float data comes directly from steamwebapi).
-    const floatCandidates = rawInventory.filter(i =>
-        i.game === 'CS2' && !i.commodity && !listedAssetIds.has(i.assetId) && i.floatValue !== null
-    )
+    // Float data comes straight from steamwebapi's inventory, so it's cached here.
+    const floatCandidates = rawInventory.filter(i => {
+        const isSkin = i.game === 'CS2' && !i.commodity
+
+        return isSkin && !listedAssetIds.has(i.assetId) && i.floatValue !== null
+    })
+
     if (floatCandidates.length > 0) {
-        // Batched into a single transaction (one round trip / one connection) instead of
-        // firing N parallel upserts that exhaust the connection pool on large inventories.
-        await prisma.$transaction(floatCandidates.map((item) =>
-            prisma.item_float.upsert({
-                where: { assetId: item.assetId },
-                update: { floatValue: item.floatValue, paintSeed: item.paintSeed, stickers: item.stickers ?? Prisma.JsonNull, fetchedAt: new Date() },
-                create: { assetId: item.assetId, floatValue: item.floatValue, paintSeed: item.paintSeed, stickers: item.stickers ?? Prisma.JsonNull },
-            })
-        ))
+        const upserts = floatCandidates.map(item => prisma.item_float.upsert({
+            where: { assetId: item.assetId },
+            update: {
+                floatValue: item.floatValue,
+                paintSeed: item.paintSeed,
+                stickers: item.stickers ?? Prisma.JsonNull,
+                fetchedAt: new Date(),
+            },
+            create: {
+                assetId: item.assetId,
+                floatValue: item.floatValue,
+                paintSeed: item.paintSeed,
+                stickers: item.stickers ?? Prisma.JsonNull,
+            },
+        }))
+
+        // One transaction, since parallel upserts exhaust the connection pool on large inventories.
+        await prisma.$transaction(upserts)
     }
 
 
-    // Join float data
     const floatRows = await prisma.item_float.findMany({
         where: { assetId: { in: rawInventory.map(i => i.assetId) } },
     })
     const floatMap = new Map(floatRows.map(f => [f.assetId, f]))
 
     const names = rawInventory.map(i => i.market_name)
-    const prices = await prisma.item.findMany({ where: { marketName: { in: names } } })
+    const prices = await prisma.item.findMany({
+        where: { marketName: { in: names } },
+    })
     const priceMap = new Map(prices.map(p => [p.marketName, p.price]))
 
-    const inventoryWithPrices = rawInventory.map(item => {
+    const unlisted = rawInventory.filter(item => !listedAssetIds.has(item.assetId))
+    const inventoryWithPrices = unlisted.map(item => {
         const f = floatMap.get(item.assetId)
+
         return {
             ...item,
             price: priceMap.get(item.market_name) ?? 0,
@@ -109,21 +141,25 @@ export default async function Inventory() {
             paintSeed: f?.paintSeed ?? null,
             stickers: (f?.stickers ?? null) as SteamSticker[] | null,
         }
-    }).filter(item => !listedAssetIds.has(item.assetId))
+    })
 
 
-    // Sign inventory token for ownership verification when listing
-    const inventoryToken = await signInventoryToken(
-        user.id,
-        rawInventory.map(i => ({ assetId: i.assetId, marketName: i.market_name })),
+    // Lets the listings API check that the seller owned these items when the page loaded.
+    const tokenItems = rawInventory.map(i => ({
+        assetId: i.assetId,
+        marketName: i.market_name,
+    }))
+    const inventoryToken = await signInventoryToken(user.id, tokenItems)
+
+    const isSteamLinked = !!(user?.steam_id && user?.steam_trade_url)
+
+    return (
+        <InventoryClient
+            isSteamLinked={isSteamLinked}
+            hasNotificationEmail={!!user.notificationEmail}
+            inventory={inventoryWithPrices}
+            lastRefresh={cacheValid ? user.lastInventoryRefresh! : now}
+            inventoryToken={inventoryToken}
+        />
     )
-
-    
-    return <InventoryClient
-        isSteamLinked={!!(user?.steam_id && user?.steam_trade_url)}
-        hasNotificationEmail={!!user.notificationEmail}
-        inventory={inventoryWithPrices}
-        lastRefresh={cacheValid ? user.lastInventoryRefresh! : now}
-        inventoryToken={inventoryToken}
-    />
 }
