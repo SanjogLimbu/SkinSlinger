@@ -1,13 +1,41 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { fetchItemPrice } from '@/lib/steam'
+import { fetchItemPrice, SteamItem } from '@/lib/steam'
 import { prisma } from '@/lib/db'
+import { stickerMarketName } from '@/lib/pricing'
 
 //
 
 type PriceRequest = { market_name: string, market_hash_name: string, game: string }
 
 //
+
+// Names come from the user's own inventory snapshot, so a request can't store one item's price under another's name.
+function ownedPriceRequests(inventory: SteamItem[]): Map<string, PriceRequest> {
+    const owned = new Map<string, PriceRequest>()
+
+    for (const item of inventory) {
+        owned.set(item.market_name, {
+            market_name: item.market_name,
+            market_hash_name: item.market_hash_name,
+            game: item.game,
+        })
+
+        for (const sticker of item.stickers ?? []) {
+            const name = stickerMarketName(sticker.name)
+
+            owned.set(name, {
+                market_name: name,
+                market_hash_name: name,
+                game: 'CS2',
+            })
+        }
+    }
+
+
+    return owned
+}
+
 
 export async function POST(request: Request) {
     const session = await getServerSession(authOptions)
@@ -17,18 +45,41 @@ export async function POST(request: Request) {
     }
 
 
-    let items: PriceRequest[]
+    let requested: PriceRequest[]
 
     try {
-        ({ items } = await request.json())
+        ({ items: requested } = await request.json())
     }
     catch {
         return Response.json({ error: 'Invalid request body' }, { status: 400 })
     }
 
 
-    if (!Array.isArray(items) || items.length === 0) {
+    if (!Array.isArray(requested) || requested.length === 0) {
         return Response.json({ error: 'items must be a non-empty array' }, { status: 400 })
+    }
+
+
+    const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { inventoryCache: true },
+    })
+
+    const owned = ownedPriceRequests((user?.inventoryCache ?? []) as SteamItem[])
+    const items: PriceRequest[] = []
+    const seen = new Set<string>()
+
+    // Each name is looked up once, so a repeated name can't spend the steamwebapi quota again.
+    for (const item of requested) {
+        const ownedItem = owned.get(item?.market_name)
+
+        if (!ownedItem || seen.has(ownedItem.market_name)) {
+            continue
+        }
+
+
+        seen.add(ownedItem.market_name)
+        items.push(ownedItem)
     }
 
 
@@ -68,9 +119,14 @@ export async function POST(request: Request) {
                 const price = await fetchItemPrice(item.market_hash_name, item.game) ?? 0
 
                 if (price > 0) {
+                    // The hash name is rewritten too, so a row stored under a wrong one is repaired.
                     await prisma.item.upsert({
                         where: { marketName: item.market_name },
-                        update: { price },
+                        update: {
+                            price,
+                            marketHashName: item.market_hash_name,
+                            game: item.game,
+                        },
                         create: {
                             marketName: item.market_name,
                             marketHashName: item.market_hash_name,

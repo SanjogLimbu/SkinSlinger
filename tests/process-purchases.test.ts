@@ -6,9 +6,10 @@ import { sendTradeCompleteEmails, sendReversalRefundEmails } from "@/lib/tradeNo
 //
 
 const prisma = vi.hoisted(() => ({
-    purchase: { findMany: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
+    purchase: { findMany: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
     item_float: { findMany: vi.fn() },
     item_listing: { createMany: vi.fn() },
+    cancelled_trade_offer: { createMany: vi.fn() },
     user: { update: vi.fn() },
     $transaction: vi.fn(),
 }))
@@ -25,6 +26,8 @@ vi.mock("@/lib/tradeNotifications", () => ({
 
 const SKIN = "AK-47 | Redline (Field-Tested)"
 const DAY = 24 * 60 * 60 * 1000
+const BUYER_STEAM_ID = "76561198000000000"
+const SELLER_STEAM_ID = "76561198000000001"
 
 beforeEach(() => {
     vi.resetAllMocks()
@@ -64,10 +67,53 @@ function purchase(overrides: object = {}) {
         deliveredAt: null,
         tradeOfferSentAt: null,
         tradeOfferId: null,
-        buyer: { steam_id: "76561198000000000", steam_trade_url: null, notificationEmail: "buyer@example.com" },
-        seller: { notificationEmail: "seller@example.com" },
+        buyer: { steam_id: BUYER_STEAM_ID, steam_trade_url: null, notificationEmail: "buyer@example.com" },
+        seller: { steam_id: SELLER_STEAM_ID, steam_trade_url: null, notificationEmail: "seller@example.com" },
         ...overrides,
     }
+}
+
+
+function heldPastHold(overrides: object = {}) {
+    return purchase({ status: "holding", deliveredAt: daysAgo(9), ...overrides })
+}
+
+
+function skinFloat() {
+    prisma.item_float.findMany.mockResolvedValue([{ assetId: "CS2:1", floatValue: 0.25, paintSeed: 7 }])
+}
+
+
+function inventories(buyer: string, seller?: string) {
+    vi.mocked(verifyBuyerHasItem).mockImplementation(async (steamId) => {
+        return (steamId === BUYER_STEAM_ID ? buyer : seller) as never
+    })
+}
+
+
+function expectRefund() {
+    expect(prisma.purchase.updateMany).toHaveBeenCalledWith({
+        where: { id: "p1", status: "holding" },
+        data: { status: "reversed" },
+    })
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: "buyer" },
+        data: { cash: { increment: 10 } },
+    })
+}
+
+
+function expectSellerPaid() {
+    expect(prisma.purchase.updateMany).toHaveBeenCalledWith({
+        where: { id: "p1", status: "holding" },
+        data: { status: "completed" },
+    })
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: "seller" },
+        data: { cash: { increment: 10 } },
+    })
 }
 
 
@@ -129,20 +175,22 @@ describe("process-purchases cron", () => {
     })
 
 
-    it("After the hold, the buyer is refunded if the item has gone (a trade reversal).", async () => {
-        vi.mocked(verifyBuyerHasItem).mockResolvedValue("no_item")
+    it("After the hold, a missing skin that is back with the seller is refunded as a reversal.", async () => {
+        skinFloat()
+        inventories("no_item", "has_item")
 
-        const summary = await run(purchase({ status: "holding", deliveredAt: daysAgo(9) }))
+        const summary = await run(heldPastHold())
 
-        expect(prisma.purchase.updateMany).toHaveBeenCalledWith({
-            where: { id: "p1", status: "holding" },
-            data: { status: "reversed" },
-        })
+        expect(verifyBuyerHasItem).toHaveBeenLastCalledWith(
+            SELLER_STEAM_ID,
+            "CS2",
+            SKIN,
+            expect.objectContaining({ floatValue: 0.25, paintSeed: 7 }),
+            null,
+            null,
+        )
 
-        expect(prisma.user.update).toHaveBeenCalledWith({
-            where: { id: "buyer" },
-            data: { cash: { increment: 10 } },
-        })
+        expectRefund()
 
         expect(sendReversalRefundEmails).toHaveBeenCalledWith([{
             marketName: SKIN,
@@ -151,6 +199,59 @@ describe("process-purchases cron", () => {
         }])
 
         expect(summary.reversed).toBe(1)
+    })
+
+
+    it("After the hold, a missing skin that isn't back with the seller pays the seller, since the buyer moved it.", async () => {
+        skinFloat()
+        inventories("no_item", "no_item")
+
+        const summary = await run(heldPastHold())
+
+        expectSellerPaid()
+        expect(summary.completed).toBe(1)
+        expect(summary.reversed).toBe(0)
+    })
+
+
+    it("A seller with a private inventory can't show the skin didn't come back, so the buyer is refunded.", async () => {
+        skinFloat()
+        inventories("no_item", "private")
+
+        await run(heldPastHold())
+
+        expectRefund()
+    })
+
+
+    it("A failed lookup of the seller's inventory moves no money.", async () => {
+        skinFloat()
+        inventories("no_item", "error")
+
+        await run(heldPastHold())
+
+        expect(prisma.purchase.updateMany).not.toHaveBeenCalled()
+        expect(prisma.user.update).not.toHaveBeenCalled()
+    })
+
+
+    it.each(["Dota2", "TF2", "Rust"])("A missing %s item pays the seller, since Steam can't reverse those trades.", async (game) => {
+        inventories("no_item")
+
+        await run(heldPastHold({ game, commodity: true }))
+
+        expect(verifyBuyerHasItem).toHaveBeenCalledTimes(1)
+        expectSellerPaid()
+    })
+
+
+    it("A missing CS2 stack is still refunded, since its copies can't be told apart.", async () => {
+        inventories("no_item")
+
+        await run(heldPastHold({ marketName: "Kilowatt Case", commodity: true }))
+
+        expect(verifyBuyerHasItem).toHaveBeenCalledTimes(1)
+        expectRefund()
     })
 
 
@@ -210,20 +311,51 @@ describe("process-purchases cron", () => {
     })
 
 
-    it("A pending order is not cancelled once the seller has sent a trade offer.", async () => {
+    it("A sent trade offer gets until Steam would expire it before the order is cancelled.", async () => {
         vi.mocked(verifyBuyerHasItem).mockResolvedValue("no_item")
 
-        await run(purchase({ createdAt: daysAgo(4), tradeOfferSentAt: daysAgo(3) }))
+        await run(purchase({ createdAt: daysAgo(14), tradeOfferSentAt: daysAgo(13) }))
 
         expect(prisma.purchase.deleteMany).not.toHaveBeenCalled()
         expect(prisma.user.update).not.toHaveBeenCalled()
     })
 
 
-    it("An order the extension is tracking is left for the extension to report.", async () => {
-        await run(purchase({ tradeOfferId: "12345" }))
+    it("A sent trade offer that never delivers is cancelled after 15 days, and queued for cancelling on Steam.", async () => {
+        vi.mocked(verifyBuyerHasItem).mockResolvedValue("no_item")
+        prisma.purchase.findUnique.mockResolvedValue({ tradeOfferId: "12345" })
 
-        expect(verifyBuyerHasItem).not.toHaveBeenCalled()
+        const summary = await run(purchase({
+            createdAt: daysAgo(17),
+            tradeOfferSentAt: daysAgo(16),
+            tradeOfferId: "12345",
+        }))
+
+        expect(prisma.cancelled_trade_offer.createMany).toHaveBeenCalledWith({
+            data: [{ tradeOfferId: "12345", sellerId: "seller" }],
+            skipDuplicates: true,
+        })
+
+        expect(prisma.user.update).toHaveBeenCalledWith({
+            where: { id: "buyer" },
+            data: { cash: { increment: 10 } },
+        })
+
+        expect(summary.autoCancelled).toBe(1)
+    })
+
+
+    it("An order the extension is tracking is still checked, so delivery is seen without the extension.", async () => {
+        vi.mocked(verifyBuyerHasItem).mockResolvedValue("has_item")
+
+        const summary = await run(purchase({ tradeOfferSentAt: daysAgo(1), tradeOfferId: "12345" }))
+
+        expect(prisma.purchase.updateMany).toHaveBeenCalledWith({
+            where: { id: "p1", status: "pending" },
+            data: { status: "holding", deliveredAt: expect.any(Date) },
+        })
+
+        expect(summary.delivered).toBe(1)
     })
 
 

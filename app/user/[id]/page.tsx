@@ -37,8 +37,6 @@ export default async function PublicProfile({ params }: Props) {
             id: true,
             name: true,
             image: true,
-            sales: true,
-            purchases: true,
             createdAt: true,
             steam_id: true,
         },
@@ -49,9 +47,18 @@ export default async function PublicProfile({ params }: Props) {
     }
 
 
-    const [purchaseCount, saleCount, listings] = await Promise.all([
-        prisma.purchase.count({ where: { buyer: { steam_id: id }, status: "completed" } }),
-        prisma.purchase.count({ where: { seller: { steam_id: id }, status: "completed" } }),
+    // Volume comes from completed trades, since the user's sales and purchases columns are never updated.
+    const [bought, sold, listings] = await Promise.all([
+        prisma.purchase.aggregate({
+            where: { buyer: { steam_id: id }, status: "completed" },
+            _count: true,
+            _sum: { price: true },
+        }),
+        prisma.purchase.aggregate({
+            where: { seller: { steam_id: id }, status: "completed" },
+            _count: true,
+            _sum: { price: true },
+        }),
         prisma.item_listing.findMany({
             where: { userId: user.id },
             select: {
@@ -93,10 +100,10 @@ export default async function PublicProfile({ params }: Props) {
         <ProfileClient
             name={user.name ?? null}
             image={user.image ?? null}
-            sales={user.sales}
-            purchases={user.purchases}
-            saleCount={saleCount}
-            purchaseCount={purchaseCount}
+            sales={sold._sum.price ?? 0}
+            purchases={bought._sum.price ?? 0}
+            saleCount={sold._count}
+            purchaseCount={bought._count}
             createdAt={user.createdAt}
             steamId={user.steam_id ?? null}
             listings={listingsWithFloat}

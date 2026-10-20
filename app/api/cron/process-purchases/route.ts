@@ -15,6 +15,9 @@ const HOLD_MS = 8 * 24 * 60 * 60 * 1000
 // A seller who hasn't sent a trade offer by then loses the sale, so the buyer's cash isn't stuck.
 const AUTO_CANCEL_MS = 3 * 24 * 60 * 60 * 1000
 
+// Steam expires a trade offer after 14 days, so by then a sent offer can no longer deliver.
+const OFFER_DEADLINE_MS = 15 * 24 * 60 * 60 * 1000
+
 //
 
 type CancellablePurchase = {
@@ -29,6 +32,16 @@ type CancellablePurchase = {
     hexColor: string | null
     commodity: boolean
 }
+
+type HeldPurchase = {
+    game: string | null
+    marketName: string
+    seller: { steam_id: string | null, steam_trade_url: string | null }
+}
+
+type FloatRow = { floatValue: number | null, paintSeed: number | null }
+
+type MissingItem = "reversed" | "moved" | "unknown"
 
 //
 
@@ -81,10 +94,25 @@ async function refundReversal(id: string, buyerId: string, price: number): Promi
 // Only the run that removes the order refunds it, so the buyer is never refunded twice.
 async function autoCancelPurchase(purchase: CancellablePurchase): Promise<boolean> {
     return prisma.$transaction(async (tx) => {
+        // Re-read, since the extension may have recorded a trade offer after this run loaded the order.
+        const current = await tx.purchase.findUnique({
+            where: { id: purchase.id },
+            select: { tradeOfferId: true },
+        })
+
         const removed = await tx.purchase.deleteMany({ where: { id: purchase.id, status: "pending" } })
 
         if (removed.count === 0) {
             return false
+        }
+
+
+        // Queued for the seller's extension to cancel on Steam, or the buyer could accept it after the refund.
+        if (current?.tradeOfferId) {
+            await tx.cancelled_trade_offer.createMany({
+                data: [{ tradeOfferId: current.tradeOfferId, sellerId: purchase.sellerId }],
+                skipDuplicates: true,
+            })
         }
 
 
@@ -111,6 +139,44 @@ async function autoCancelPurchase(purchase: CancellablePurchase): Promise<boolea
     })
 }
 
+
+// A reversal sends the item back to the seller, while a CS2 buyer can't move it until protection ends.
+async function traceMissingItem(purchase: HeldPurchase, float: FloatRow | null): Promise<MissingItem> {
+    // Steam can only reverse CS2 trades, so in other games the buyer moved the item themselves.
+    if ((purchase.game ?? "CS2") !== "CS2") {
+        return "moved"
+    }
+
+
+    // A stack's copies can't be told apart, so a missing copy still counts as a reversal.
+    if (float?.floatValue == null || !purchase.seller.steam_id) {
+        return "reversed"
+    }
+
+
+    const result = await verifyBuyerHasItem(
+        purchase.seller.steam_id,
+        purchase.game,
+        purchase.marketName,
+        float,
+        purchase.seller.steam_trade_url,
+        null,
+    )
+
+    if (result === "error") {
+        return "unknown"
+    }
+
+
+    // A private inventory can't show the item didn't come back, so the buyer gets the benefit of the doubt.
+    if (result === "has_item" || result === "private") {
+        return "reversed"
+    }
+
+
+    return "moved"
+}
+
 //
 
 export async function GET(request: Request) {
@@ -129,7 +195,7 @@ export async function GET(request: Request) {
             },
             include: {
                 buyer: { select: { steam_id: true, steam_trade_url: true, notificationEmail: true } },
-                seller: { select: { notificationEmail: true } },
+                seller: { select: { notificationEmail: true, steam_id: true, steam_trade_url: true } },
             },
         })
 
@@ -163,14 +229,8 @@ export async function GET(request: Request) {
                 const deliveredAt = purchase.deliveredAt?.getTime()
                 const matured = holding && deliveredAt != null && now - deliveredAt >= HOLD_MS
 
-                // The item is trade-locked during the hold, so there's nothing to check until it ends.
+                // A trade can only be reversed during the hold, so the order is settled once it ends.
                 if (holding && !matured) {
-                    continue
-                }
-
-
-                // The extension reports these itself, and Steam hides freshly traded items from inventory lookups.
-                if (purchase.status === "pending" && purchase.tradeOfferId) {
                     continue
                 }
 
@@ -193,10 +253,15 @@ export async function GET(request: Request) {
 
 
                 const itemArrived = result === "has_item" || result === "private"
-                const offerSent = purchase.tradeOfferSentAt != null
-                const overdue = now - purchase.createdAt.getTime() >= AUTO_CANCEL_MS
 
                 if (purchase.status === "pending") {
+                    const offerSentAt = purchase.tradeOfferSentAt?.getTime()
+
+                    // A sent offer gets until Steam would expire it, so the buyer's cash is never stuck for good.
+                    const deadline = offerSentAt != null
+                        ? offerSentAt + OFFER_DEADLINE_MS
+                        : purchase.createdAt.getTime() + AUTO_CANCEL_MS
+
                     if (itemArrived) {
                         const moved = await prisma.purchase.updateMany({
                             where: { id: purchase.id, status: "pending" },
@@ -207,8 +272,7 @@ export async function GET(request: Request) {
                             delivered++
                         }
                     }
-                    // No trade offer in time, so the order is cancelled rather than leaving the buyer's cash stuck.
-                    else if (!offerSent && overdue) {
+                    else if (now >= deadline) {
                         const cancelled = await autoCancelPurchase(purchase)
 
                         if (cancelled) {
@@ -216,32 +280,41 @@ export async function GET(request: Request) {
                         }
                     }
                 }
-                else if (itemArrived) {
-                    const completed = await completePurchase(
-                        purchase.id,
-                        purchase.sellerId,
-                        purchase.price,
-                    )
-
-                    if (completed) {
-                        completedTrades.push({
-                            marketName: purchase.marketName,
-                            price: purchase.price,
-                            buyerEmail: purchase.buyer.notificationEmail,
-                            sellerEmail: purchase.seller.notificationEmail,
-                        })
-                    }
-                }
-                // The item left the buyer during the hold, so the trade was reversed.
                 else {
-                    const refunded = await refundReversal(purchase.id, purchase.buyerId, purchase.price)
+                    const missing = itemArrived ? null : await traceMissingItem(purchase, float)
 
-                    if (refunded) {
-                        reversedTrades.push({
-                            marketName: purchase.marketName,
-                            price: purchase.price,
-                            buyerEmail: purchase.buyer.notificationEmail,
-                        })
+                    // Money never moves on a guess, so the order waits for the next run.
+                    if (missing === "unknown") {
+                        continue
+                    }
+
+
+                    if (missing === "reversed") {
+                        const refunded = await refundReversal(purchase.id, purchase.buyerId, purchase.price)
+
+                        if (refunded) {
+                            reversedTrades.push({
+                                marketName: purchase.marketName,
+                                price: purchase.price,
+                                buyerEmail: purchase.buyer.notificationEmail,
+                            })
+                        }
+                    }
+                    else {
+                        const completed = await completePurchase(
+                            purchase.id,
+                            purchase.sellerId,
+                            purchase.price,
+                        )
+
+                        if (completed) {
+                            completedTrades.push({
+                                marketName: purchase.marketName,
+                                price: purchase.price,
+                                buyerEmail: purchase.buyer.notificationEmail,
+                                sellerEmail: purchase.seller.notificationEmail,
+                            })
+                        }
                     }
                 }
             }

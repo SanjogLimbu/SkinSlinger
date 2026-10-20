@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { getServerSession } from "next-auth"
 import { POST } from "@/app/api/market/orders/buy/route"
+import { DELETE } from "@/app/api/market/orders/buy/[id]/route"
 import { countInventoryItem } from "@/lib/steam"
 
 //
@@ -8,7 +9,7 @@ import { countInventoryItem } from "@/lib/steam"
 const { prisma, sendEmail } = vi.hoisted(() => ({
     prisma: {
         user: { findUnique: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
-        buy_order: { findFirst: vi.fn(), create: vi.fn() },
+        buy_order: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), deleteMany: vi.fn() },
         item_listing: { findMany: vi.fn(), deleteMany: vi.fn() },
         purchase: { create: vi.fn() },
         $transaction: vi.fn(),
@@ -253,6 +254,52 @@ describe("place buy order", () => {
         await placeOrder()
 
         expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: ["seller@example.com"] }))
+    })
+
+})
+
+
+describe("cancel buy order", () => {
+
+    async function cancelOrder() {
+        const request = new Request("http://localhost/api/market/orders/buy/order", { method: "DELETE" })
+        const response = await DELETE(request, { params: Promise.resolve({ id: "order" }) })
+
+        return response.status
+    }
+
+
+    beforeEach(() => {
+        prisma.buy_order.findUnique.mockResolvedValue({ id: "order", userId: "buyer", price: 10, quantity: 2 })
+        prisma.buy_order.deleteMany.mockResolvedValue({ count: 1 })
+    })
+
+
+    it("Refunds the whole bid for the quantity still open.", async () => {
+        expect(await cancelOrder()).toBe(200)
+
+        expect(prisma.buy_order.deleteMany).toHaveBeenCalledWith({ where: { id: "order", quantity: 2 } })
+
+        expect(prisma.user.update).toHaveBeenCalledWith({
+            where: { id: "buyer" },
+            data: { cash: { increment: 20 } },
+        })
+    })
+
+
+    it("Refunds nothing when a sale filled part of the order after it was read.", async () => {
+        prisma.buy_order.deleteMany.mockResolvedValue({ count: 0 })
+
+        expect(await cancelOrder()).toBe(409)
+        expect(prisma.user.update).not.toHaveBeenCalled()
+    })
+
+
+    it("Only the buyer who placed the order can cancel it.", async () => {
+        prisma.buy_order.findUnique.mockResolvedValue({ id: "order", userId: "someone-else", price: 10, quantity: 2 })
+
+        expect(await cancelOrder()).toBe(403)
+        expect(prisma.buy_order.deleteMany).not.toHaveBeenCalled()
     })
 
 })

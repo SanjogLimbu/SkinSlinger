@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { findPriceFormatError, findPriceLimitError } from "@/lib/listings"
 
 //
 
@@ -16,8 +17,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         const { id } = await params
         const { price } = await req.json()
 
-        if (typeof price !== "number" || price <= 0) {
-            return Response.json({ error: "Invalid price" }, { status: 400 })
+        const formatError = findPriceFormatError([{ price }])
+
+        if (formatError) {
+            return Response.json({ error: formatError }, { status: 400 })
         }
 
 
@@ -30,6 +33,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         if (listing.userId !== session.user.id) {
             return Response.json({ error: "Forbidden" }, { status: 403 })
+        }
+
+
+        // The same limits as a new listing, or a seller could list at an allowed price and then edit it.
+        const limitError = await findPriceLimitError([{
+            assetId: listing.assetId,
+            marketName: listing.marketName,
+            price,
+            commodity: listing.commodity,
+        }])
+
+        if (limitError) {
+            return Response.json({ error: limitError }, { status: 400 })
         }
 
 

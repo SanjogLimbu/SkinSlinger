@@ -870,9 +870,9 @@ function ExtensionPromptCard() {
                 </h2>
 
                 <p className="text-sm text-gray-400 mt-1">
-                    The SkinSlinger Trade Helper extension is required to verify your trades: it detects
-                    when you send a trade offer, confirms when the buyer accepts it, and cancels the
-                    Steam offer if an order is cancelled. Without it your sales can&apos;t be verified.
+                    The SkinSlinger Trade Helper extension tracks your trades: it detects when you send
+                    a trade offer, so the order isn&apos;t cancelled while the buyer accepts it, and cancels
+                    the Steam offer if an order is cancelled.
                 </p>
             </div>
 

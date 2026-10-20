@@ -6,9 +6,15 @@ import { verifyInventoryToken } from "@/lib/inventoryToken"
 import { Resend } from "resend"
 import { PurchaseNotificationEmail } from "@/app/components/emails/PurchaseNotificationEmail"
 import { countInventoryItem, SteamItem } from "@/lib/steam"
-import { maxListingPrice, minListingPrice, stickerMarketName, Sticker } from "@/lib/pricing"
 import { RARITIES } from "@/lib/rarity"
-import { buildListings, findPriceFormatError, trustedMarketName, ListingRequest } from "@/lib/listings"
+import {
+    buildListings,
+    findPriceFormatError,
+    findPriceLimitError,
+    trustedMarketName,
+    ListingRequest,
+    PricedItem,
+} from "@/lib/listings"
 
 //
 
@@ -239,58 +245,6 @@ export async function DELETE(request: Request) {
 // POST: list items for sale
 //
 
-async function findPriceLimitError(
-    items: ListingRequest[],
-    ownedItems: Map<string, SteamItem>,
-): Promise<string | null> {
-    // Stickers add to a skin's value, so they raise its price cap.
-    const floatRows = await prisma.item_float.findMany({
-        where: { assetId: { in: items.map((item) => item.assetId) } },
-        select: { assetId: true, stickers: true },
-    })
-
-    const stickersByAssetId = new Map<string, Sticker[]>()
-
-    for (const row of floatRows) {
-        stickersByAssetId.set(row.assetId, (row.stickers ?? []) as Sticker[])
-    }
-
-
-    const itemNames = items.map((item) => trustedMarketName(item, ownedItems))
-    const allStickers = [...stickersByAssetId.values()].flat()
-    const stickerNames = allStickers.map((sticker) => stickerMarketName(sticker.name))
-
-    const priceRows = await prisma.item.findMany({
-        where: { marketName: { in: [...itemNames, ...stickerNames] } },
-        select: { marketName: true, price: true },
-    })
-
-    const marketPrices = new Map(priceRows.map((row) => [row.marketName, row.price]))
-    const priceOf = (marketName: string) => marketPrices.get(marketName) ?? 0
-
-    for (const item of items) {
-        const name = trustedMarketName(item, ownedItems)
-        const marketPrice = priceOf(name)
-        const stickers = item.commodity ? null : stickersByAssetId.get(item.assetId)
-        const maxPrice = maxListingPrice(marketPrice, stickers, priceOf)
-
-        if (maxPrice !== null && item.price > maxPrice) {
-            return `${name} can't be listed above $${maxPrice.toFixed(2)}.`
-        }
-
-
-        const minPrice = minListingPrice(marketPrice)
-
-        if (minPrice !== null && item.price < minPrice) {
-            return `${name} can't be listed below $${minPrice.toFixed(2)}.`
-        }
-    }
-
-
-    return null
-}
-
-
 async function matchBuyOrder(
     assetId: string,
     sellerId: string,
@@ -484,7 +438,19 @@ export async function POST(request: Request) {
         }
 
 
-        const limitError = await findPriceLimitError(items, ownedItems)
+        const pricedItems: PricedItem[] = []
+
+        for (const item of items as ListingRequest[]) {
+            pricedItems.push({
+                assetId: item.assetId,
+                marketName: trustedMarketName(item, ownedItems),
+                price: item.price,
+                commodity: item.commodity,
+            })
+        }
+
+
+        const limitError = await findPriceLimitError(pricedItems)
 
         if (limitError) {
             return Response.json({ error: limitError }, { status: 400 })

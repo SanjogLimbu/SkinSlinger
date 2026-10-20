@@ -75,6 +75,8 @@ function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () =>
     const floatText = group.floatValue?.toFixed(9).replace(/0+$/, '') ?? ''
 
     async function savePrice() {
+        const previousPrice = basePrice
+
         setSaving(true)
         setBasePrice(parsedPrice)
         setError("")
@@ -91,6 +93,7 @@ function ListingCard({ group, onDelist }: { group: ListingGroup; onDelist: () =>
                 const data = await res.json()
 
                 setError(data.error ?? "Failed to update price")
+                setBasePrice(previousPrice)
                 setSaving(false)
 
                 return

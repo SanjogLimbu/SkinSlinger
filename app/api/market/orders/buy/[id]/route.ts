@@ -27,13 +27,30 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         }
 
 
-        await prisma.$transaction(async (tx) => {
-            await tx.buy_order.delete({ where: { id } })
+        const cancelled = await prisma.$transaction(async (tx) => {
+            // A sale can fill part of the order after it was read, and those units mustn't be refunded too.
+            const removed = await tx.buy_order.deleteMany({ where: { id, quantity: order.quantity } })
+
+            if (removed.count === 0) {
+                return false
+            }
+
+
             await tx.user.update({
                 where: { id: session.user.id },
                 data: { cash: { increment: order.price * order.quantity } },
             })
+
+            return true
         })
+
+        if (!cancelled) {
+            return Response.json(
+                { error: "This order just changed. Refresh and try again." },
+                { status: 409 },
+            )
+        }
+
 
         return Response.json(null, { status: 200 })
     }

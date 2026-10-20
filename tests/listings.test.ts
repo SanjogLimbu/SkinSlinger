@@ -4,6 +4,7 @@ import { buildListings, findPriceFormatError, trustedMarketName, ListingRequest 
 import { verifyInventoryToken } from "@/lib/inventoryToken"
 import { countInventoryItem, SteamItem } from "@/lib/steam"
 import { POST } from "@/app/api/listings/route"
+import { PATCH } from "@/app/api/listings/[id]/route"
 
 //
 
@@ -11,7 +12,13 @@ const prisma = vi.hoisted(() => ({
     user: { findUnique: vi.fn(), update: vi.fn() },
     item: { findMany: vi.fn() },
     item_float: { findMany: vi.fn() },
-    item_listing: { findMany: vi.fn(), findUnique: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn() },
+    item_listing: {
+        findMany: vi.fn(),
+        findUnique: vi.fn(),
+        createMany: vi.fn(),
+        deleteMany: vi.fn(),
+        update: vi.fn(),
+    },
     buy_order: { findFirst: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
     purchase: { findMany: vi.fn(), create: vi.fn() },
     $transaction: vi.fn(),
@@ -334,6 +341,81 @@ describe("list items", () => {
         expect((await sellCasesToBuyOrder()).status).toBe(200)
         expect(prisma.item_listing.createMany).toHaveBeenCalled()
         expect(prisma.purchase.create).not.toHaveBeenCalled()
+    })
+
+})
+
+
+describe("edit a listing's price", () => {
+
+    beforeEach(() => {
+        vi.resetAllMocks()
+
+        vi.mocked(getServerSession).mockResolvedValue({ user: { id: "seller" } })
+
+        prisma.item_listing.findUnique.mockResolvedValue({
+            id: "l1",
+            userId: "seller",
+            assetId: "CS2:1",
+            marketName: SKIN,
+            price: 5,
+            commodity: false,
+        })
+
+        prisma.item_float.findMany.mockResolvedValue([])
+        prisma.item.findMany.mockResolvedValue([{ marketName: SKIN, price: 10 }])
+    })
+
+
+    async function editPrice(price: unknown) {
+        const request = new Request("http://localhost/api/listings/l1", {
+            method: "PATCH",
+            body: JSON.stringify({ price }),
+        })
+
+        const response = await PATCH(request, { params: Promise.resolve({ id: "l1" }) })
+
+        return { status: response.status, body: await response.json() }
+    }
+
+
+    it("Saves a price inside the limits.", async () => {
+        expect((await editPrice(12.5)).status).toBe(200)
+
+        expect(prisma.item_listing.update).toHaveBeenCalledWith({
+            where: { id: "l1" },
+            data: { price: 12.5 },
+        })
+    })
+
+
+    it("Can't be edited above the cap a new listing would have.", async () => {
+        expect(await editPrice(50)).toEqual({
+            status: 400,
+            body: { error: `${SKIN} can't be listed above $30.00.` },
+        })
+
+        expect(prisma.item_listing.update).not.toHaveBeenCalled()
+    })
+
+
+    it("Can't be edited below the floor a new listing would have.", async () => {
+        expect((await editPrice(0.5)).status).toBe(400)
+        expect(prisma.item_listing.update).not.toHaveBeenCalled()
+    })
+
+
+    it.each([0.001, 5.123, -1, "5"])("Rejects a price of %j.", async (price) => {
+        expect((await editPrice(price)).status).toBe(400)
+        expect(prisma.item_listing.update).not.toHaveBeenCalled()
+    })
+
+
+    it("Only the seller can edit their listing.", async () => {
+        vi.mocked(getServerSession).mockResolvedValue({ user: { id: "someone-else" } })
+
+        expect((await editPrice(12.5)).status).toBe(403)
+        expect(prisma.item_listing.update).not.toHaveBeenCalled()
     })
 
 })

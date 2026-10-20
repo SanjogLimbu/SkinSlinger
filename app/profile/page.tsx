@@ -14,20 +14,27 @@ export default async function Profile() {
     }
 
 
-    const [user, purchaseCount, saleCount, listings] = await Promise.all([
+    // Volume comes from completed trades, since the user's sales and purchases columns are never updated.
+    const [user, bought, sold, listings] = await Promise.all([
         prisma.user.findUnique({
             where: { id: session.user.id },
             select: {
-                sales: true,
-                purchases: true,
                 createdAt: true,
                 steam_id: true,
                 name: true,
                 image: true,
             },
         }),
-        prisma.purchase.count({ where: { buyerId: session.user.id, status: "completed" } }),
-        prisma.purchase.count({ where: { sellerId: session.user.id, status: "completed" } }),
+        prisma.purchase.aggregate({
+            where: { buyerId: session.user.id, status: "completed" },
+            _count: true,
+            _sum: { price: true },
+        }),
+        prisma.purchase.aggregate({
+            where: { sellerId: session.user.id, status: "completed" },
+            _count: true,
+            _sum: { price: true },
+        }),
         prisma.item_listing.findMany({
             where: { userId: session.user.id },
             select: {
@@ -67,10 +74,10 @@ export default async function Profile() {
 
     return (
         <ProfileClient
-            sales={user?.sales ?? 0}
-            purchases={user?.purchases ?? 0}
-            saleCount={saleCount}
-            purchaseCount={purchaseCount}
+            sales={sold._sum.price ?? 0}
+            purchases={bought._sum.price ?? 0}
+            saleCount={sold._count}
+            purchaseCount={bought._count}
             createdAt={user?.createdAt ?? new Date()}
             steamId={user?.steam_id ?? null}
             listings={listingsWithFloat}

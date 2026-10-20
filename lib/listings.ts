@@ -1,4 +1,6 @@
+import { prisma } from "./db"
 import { SteamItem } from "./steam"
+import { maxListingPrice, minListingPrice, stickerMarketName, Sticker } from "./pricing"
 
 //
 
@@ -16,6 +18,13 @@ export type ListingRequest = {
 
 export type TokenItem = { assetId: string, marketName: string }
 
+export type PricedItem = {
+    assetId: string
+    marketName: string
+    price: number
+    commodity: boolean
+}
+
 export type NewListing = {
     userId: string
     assetId: string
@@ -30,7 +39,7 @@ export type NewListing = {
 //
 
 // A negative price would turn checkout's cash deduction into a credit.
-export function findPriceFormatError(items: ListingRequest[]): string | null {
+export function findPriceFormatError(items: { price: number }[]): string | null {
     for (const item of items) {
         const isNumber = typeof item.price === "number" && Number.isFinite(item.price)
 
@@ -59,6 +68,55 @@ export function trustedMarketName(item: ListingRequest, ownedItems: Map<string, 
 
 
     return ownedItems.get(item.assetId)?.market_name ?? ""
+}
+
+
+// Each item's name must already be trusted, since the price limits come from it.
+export async function findPriceLimitError(items: PricedItem[]): Promise<string | null> {
+    // Stickers add to a skin's value, so they raise its price cap.
+    const floatRows = await prisma.item_float.findMany({
+        where: { assetId: { in: items.map((item) => item.assetId) } },
+        select: { assetId: true, stickers: true },
+    })
+
+    const stickersByAssetId = new Map<string, Sticker[]>()
+
+    for (const row of floatRows) {
+        stickersByAssetId.set(row.assetId, (row.stickers ?? []) as Sticker[])
+    }
+
+
+    const itemNames = items.map((item) => item.marketName)
+    const allStickers = [...stickersByAssetId.values()].flat()
+    const stickerNames = allStickers.map((sticker) => stickerMarketName(sticker.name))
+
+    const priceRows = await prisma.item.findMany({
+        where: { marketName: { in: [...itemNames, ...stickerNames] } },
+        select: { marketName: true, price: true },
+    })
+
+    const marketPrices = new Map(priceRows.map((row) => [row.marketName, row.price]))
+    const priceOf = (marketName: string) => marketPrices.get(marketName) ?? 0
+
+    for (const item of items) {
+        const marketPrice = priceOf(item.marketName)
+        const stickers = item.commodity ? null : stickersByAssetId.get(item.assetId)
+        const maxPrice = maxListingPrice(marketPrice, stickers, priceOf)
+
+        if (maxPrice !== null && item.price > maxPrice) {
+            return `${item.marketName} can't be listed above $${maxPrice.toFixed(2)}.`
+        }
+
+
+        const minPrice = minListingPrice(marketPrice)
+
+        if (minPrice !== null && item.price < minPrice) {
+            return `${item.marketName} can't be listed below $${minPrice.toFixed(2)}.`
+        }
+    }
+
+
+    return null
 }
 
 

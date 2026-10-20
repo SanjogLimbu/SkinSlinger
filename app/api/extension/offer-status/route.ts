@@ -7,6 +7,7 @@ import { sendTradeOfferSentEmail } from "@/lib/tradeNotifications"
 
 type OfferUpdate = { orderId?: unknown, state?: unknown, tradeOfferId?: unknown }
 
+// "accepted" is still allowed so the extension's reports pass, but only our own inventory check can start the hold.
 const OFFER_STATES = ["active", "gone", "accepted"]
 
 //
@@ -20,7 +21,7 @@ function isValidUpdate(update: OfferUpdate): boolean {
 }
 
 
-// Trusting the extension is safe, since payout still waits on the cron's inventory check.
+// The extension runs on the seller's machine and could lie, so its reports only track trade offers.
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions)
@@ -110,14 +111,6 @@ export async function POST(req: Request) {
                 await prisma.purchase.updateMany({
                     where: { id: purchase.id, status: "pending" },
                     data: { tradeOfferSentAt: null, tradeOfferId: null },
-                })
-            }
-
-
-            if (update.state === "accepted") {
-                await prisma.purchase.updateMany({
-                    where: { id: purchase.id, status: "pending" },
-                    data: { status: "holding", deliveredAt: new Date() },
                 })
             }
         }
