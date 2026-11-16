@@ -255,6 +255,12 @@ export async function GET(request: Request) {
                 const itemArrived = result === "has_item" || result === "private"
 
                 if (purchase.status === "pending") {
+                    // A private inventory can't show the item arrived, nor justify a refund if it did.
+                    if (result === "private") {
+                        continue
+                    }
+
+
                     const offerSentAt = purchase.tradeOfferSentAt?.getTime()
 
                     // A sent offer gets until Steam would expire it, so the buyer's cash is never stuck for good.
@@ -262,7 +268,7 @@ export async function GET(request: Request) {
                         ? offerSentAt + OFFER_DEADLINE_MS
                         : purchase.createdAt.getTime() + AUTO_CANCEL_MS
 
-                    if (itemArrived) {
+                    if (result === "has_item") {
                         const moved = await prisma.purchase.updateMany({
                             where: { id: purchase.id, status: "pending" },
                             data: { status: "holding", deliveredAt: new Date() },

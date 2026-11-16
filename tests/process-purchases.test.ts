@@ -281,6 +281,19 @@ describe("process-purchases cron", () => {
     })
 
 
+    it.each([0, 4])("A pending order stays pending while the buyer's inventory is private (%i days old).", async (age) => {
+        vi.mocked(verifyBuyerHasItem).mockResolvedValue("private")
+
+        const summary = await run(purchase({ createdAt: daysAgo(age) }))
+
+        expect(prisma.purchase.updateMany).not.toHaveBeenCalled()
+        expect(prisma.purchase.deleteMany).not.toHaveBeenCalled()
+        expect(prisma.user.update).not.toHaveBeenCalled()
+        expect(summary.delivered).toBe(0)
+        expect(summary.autoCancelled).toBe(0)
+    })
+
+
     it("A pending order with no trade offer after 3 days is cancelled, refunded and relisted.", async () => {
         vi.mocked(verifyBuyerHasItem).mockResolvedValue("no_item")
 
