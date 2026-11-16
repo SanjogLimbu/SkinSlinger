@@ -14,8 +14,8 @@ export async function GET() {
 - No KYC at any point: not at sign-up, not for trading, not for withdrawals. Login is via Steam only.
 - Fees: 0% sales fee, 0% deposit fee, 0% FX fee. Withdrawal fee starts at 2.5% and falls to 0.5% with trade volume ($100 -> 2%, $1,000 -> 1.5%, $5,000 -> 1.0%, $25,000 -> 0.5%).
 - Payments: USDC on the Polygon network. Deposits and withdrawals typically confirm in under 5 minutes.
-- Trades are peer-to-peer Steam trades between players with escrowed payment: the buyer pays, the seller sends a Steam trade offer, the server verifies delivery (checks the buyer's inventory every 5 minutes), then funds are released to the seller.
-- Sellers keep 100% of the listed price. Buyers trade directly with other players, not with bots.
+- Trades are peer-to-peer Steam trades between players with escrowed payment: the buyer pays, the seller sends a Steam trade offer, the server verifies delivery (checks the buyer's inventory every 5 minutes), then funds are released to the seller 8 days after delivery. A private buyer inventory can't be checked, so the order waits until it is public.
+- Sellers are credited 100% of the listed price; the only fee is on withdrawal. Buyers trade directly with other players, not with bots.
 
 ## Main pages
 
@@ -27,7 +27,7 @@ export async function GET() {
 
 ## Comparison
 
-Typical combined fees elsewhere: Steam Community Market 15% (proceeds locked as Steam Wallet credit), Skinport ~8%, CS.Money ~7%, DMarket ~9.5%, CSFloat ~5.3%. SkinSlinger's total cost is the withdrawal fee only (2.5% falling to 0.5%).
+Typical combined fees elsewhere: Steam Community Market 15% (proceeds locked as Steam Wallet credit), Skinport ~8%, CS.Money ~7%, DMarket ~9.3%, CSFloat ~5.3%. SkinSlinger's total cost is the withdrawal fee only (2.5% falling to 0.5%).
 
 ## Contact
 

@@ -1,13 +1,68 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { posts } from '../posts'
+import { posts, type Post, type GameSlug } from '../posts'
 import PlatformComparisonTable from '../../components/PlatformComparisonTable'
 import { getBaseUrl, JsonLd } from '../../lib/site'
 
 //
 
 type Props = { params: Promise<{ slug: string }> }
+
+const MARKET_NAMES: Record<GameSlug, string> = {
+    cs2: 'CS2',
+    dota2: 'Dota 2',
+    rust: 'Rust',
+    tf2: 'TF2',
+}
+
+//
+
+function NextSteps({ post }: { post: Post }) {
+    const related = posts.filter(p =>
+        p.slug !== post.slug
+        && p.games.some(g => post.games.includes(g))
+    )
+
+    return (
+        <div className="mt-10 pt-6 border-t border-white/10 flex flex-col gap-4">
+            <div className="flex flex-wrap gap-2">
+                {post.games.map(game => (
+                    <Link
+                        key={game}
+                        href={`/market/${game}`}
+                        className="text-sm bg-accent button rounded-sm px-3 py-2"
+                    >
+                        Browse the {MARKET_NAMES[game]} market
+                    </Link>
+                ))}
+            </div>
+
+            {related.length > 0 && (
+                <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                        Related guides
+                    </p>
+
+                    <ul className="flex flex-col gap-1.5">
+                        {related.slice(0, 4).map(p => (
+                            <li key={p.slug}>
+                                <Link
+                                    href={`/blog/${p.slug}`}
+                                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                                >
+                                    {p.title}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    )
+}
+
+//
 
 export function generateStaticParams() {
     return posts.map((p) => ({ slug: p.slug }))
@@ -58,14 +113,16 @@ export default async function BlogPostPage({ params }: Props) {
 
 
     const base = getBaseUrl()
-    const imageField = post.image ? { "image": post.image } : {}
+    const image = post.image?.startsWith('/') ? `${base}${post.image}` : post.image
+    const imageField = image ? { "image": image } : {}
 
     const articleJsonLd = {
         "@context": "https://schema.org",
-        "@type": "Article",
+        "@type": "BlogPosting",
         "headline": post.title,
         "description": post.summary,
         "datePublished": new Date(post.date).toISOString(),
+        "dateModified": new Date(post.updated ?? post.date).toISOString(),
         "url": `${base}/blog/${post.slug}`,
         "mainEntityOfPage": `${base}/blog/${post.slug}`,
         ...imageField,
@@ -77,6 +134,7 @@ export default async function BlogPostPage({ params }: Props) {
         "publisher": {
             "@type": "Organization",
             "name": "SkinSlinger",
+            "url": base,
             "logo": {
                 "@type": "ImageObject",
                 "url": `${base}/logo.png`,
@@ -101,6 +159,8 @@ export default async function BlogPostPage({ params }: Props) {
 
                     <p className="text-gray-500 text-sm mb-6">
                         {post.date}
+
+                        {post.updated && ` · Updated ${post.updated}`}
                     </p>
 
                     <div className="bg-white/5 border border-white/10 rounded-lg p-4 mb-10">
@@ -148,7 +208,7 @@ export default async function BlogPostPage({ params }: Props) {
 
                     <div className="mt-10 pt-6 border-t border-white/10">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                            Author Perspective
+                            Our Perspective
                         </p>
 
                         <p className="text-sm text-gray-400 leading-relaxed italic">
@@ -180,6 +240,8 @@ export default async function BlogPostPage({ params }: Props) {
                             </ol>
                         </div>
                     )}
+
+                    <NextSteps post={post} />
                 </div>
 
                 <JsonLd data={articleJsonLd} />

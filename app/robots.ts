@@ -14,8 +14,6 @@ export default function robots(): MetadataRoute.Robots {
                     '/basket',
                     '/finance',
                     '/profile',
-                    '/reset-password',
-                    '/status',
                     '/api/',
                 ],
             },

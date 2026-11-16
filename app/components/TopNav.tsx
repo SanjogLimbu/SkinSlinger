@@ -127,8 +127,12 @@ export default function TopNav() {
                 {/* Nav bar */}
                 <div className="flex-1 h-full flex justify-end md:justify-between items-center border border-gray-800 ml-3 rounded-sm px-3 frame-shadow">
                     <div className="hidden md:flex h-full items-center gap-3">
-                        <Link href="/market" className="right-nav-link button">
+                        <Link href="/market/cs2" className="right-nav-link button">
                             Market
+                        </Link>
+
+                        <Link href="/blog" className="right-nav-link button">
+                            Blog
                         </Link>
                     </div>
 
@@ -217,11 +221,19 @@ export default function TopNav() {
                             )}
 
                             <Link
-                                href="/market"
+                                href="/market/cs2"
                                 className="mobile_menu_button button"
                                 onClick={() => setMenuOpen(false)}
                             >
                                 Market
+                            </Link>
+
+                            <Link
+                                href="/blog"
+                                className="mobile_menu_button button"
+                                onClick={() => setMenuOpen(false)}
+                            >
+                                Blog
                             </Link>
 
                             <PageLinks
@@ -241,11 +253,19 @@ export default function TopNav() {
                     ) : (
                         <>
                             <Link
-                                href="/market"
+                                href="/market/cs2"
                                 className="mobile_menu_button button"
                                 onClick={() => setMenuOpen(false)}
                             >
                                 Market
+                            </Link>
+
+                            <Link
+                                href="/blog"
+                                className="mobile_menu_button button"
+                                onClick={() => setMenuOpen(false)}
+                            >
+                                Blog
                             </Link>
                         </>
                     ))}

@@ -24,11 +24,13 @@ function ListingCard(
         floatValue,
         paintSeed,
         stickers,
+        eager,
         onBuy,
         onPreview,
     }:
     DisplayCard & {
         currentUserId: string | null,
+        eager: boolean,
         onBuy: () => void,
         onPreview: () => void,
     })
@@ -74,6 +76,8 @@ function ListingCard(
                     alt={marketName}
                     width={100}
                     height={100}
+                    loading={eager ? "eager" : "lazy"}
+                    fetchPriority={eager ? "high" : "auto"}
                     style={{
                         width: 'auto',
                         height: 'auto',

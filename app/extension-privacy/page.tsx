@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
     title: 'Trade Helper Extension Privacy Policy',
+    alternates: { canonical: '/extension-privacy' },
 }
 
 const sections = [

@@ -2,10 +2,14 @@ export type BodyBlock = { heading?: string; text: string; image?: string }
 
 export type Source = { label: string; url: string }
 
+export type GameSlug = 'cs2' | 'dota2' | 'rust' | 'tf2'
+
 export type Post = {
     slug: string
     title: string
     date: string
+    updated?: string
+    games: GameSlug[]
     summary: string
     image?: string
     tldr: string
@@ -21,7 +25,9 @@ export const posts: Post[] = [
         slug: 'how-to-sell-cs2-skins',
         title: 'How to Sell CS2 Skins for Crypto in 2026',
         date: 'June 5, 2026',
-        summary: 'Steam takes 15% and locks your money as Wallet credit. Here is how to sell CS2 skins peer-to-peer, keep 100% of the sale price, and receive USDC in minutes.',
+        updated: 'November 16, 2026',
+        games: ['cs2'],
+        summary: 'Steam takes 15% and locks your money as Wallet credit. Here is how to sell CS2 skins peer-to-peer with a 0% sales fee and get paid in USDC you can withdraw.',
         image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyLwiYbf_jdk7uW-V6V-Kf2cGFiYxO9gqa9sSS_mwR4h4D6Az9ardyqQa1NyDpIkTOBb5ES7wYDiMOyz4lPf2YsX02yg2Ubsh123`,
         tldr: 'Selling CS2 skins on the Steam Community Market costs 15% and permanently locks proceeds as Steam Wallet credit. SkinSlinger charges 0% on sales, and pays in USDC once the item is delivered and an 8-day trade-reversal hold has passed. You need Steam Guard Mobile Authenticator active for at least 7 days before listing or Steam will hold your trades.',
         body: [
@@ -30,7 +36,7 @@ export const posts: Post[] = [
             },
             {
                 heading: 'Why Peer-to-Peer CS2 Selling Changes the Math',
-                text: 'SkinSlinger is a peer-to-peer CS2 marketplace where the seller sets the price and receives 100% of it in USDC. USDC is a stablecoin pegged to the US dollar, issued by Circle and settled on the Polygon network. There are no platform fees deducted at sale and no lock-in. A seller listing an AWP at $180 receives $180 in USDC when it sells, withdrawable to any Polygon-compatible wallet and exchangeable for local currency on any major exchange. Funds are released 8 days after delivery, once Steam\'s trade-reversal window has closed.',
+                text: 'SkinSlinger is a peer-to-peer CS2 marketplace where the seller sets the price and receives 100% of it in USDC. USDC is a stablecoin pegged to the US dollar, issued by Circle and settled on the Polygon network. There are no platform fees deducted at sale and no lock-in. A seller listing an AWP at $180 has $180 in USDC credited to their balance, released 8 days after delivery once Steam\'s trade-reversal window has closed. Withdrawing it to a Polygon-compatible wallet costs a 2.5% fee, falling to 0.5% as your trading volume grows, and the USDC can then be exchanged for local currency on any major exchange.',
             },
             {
                 heading: 'Step 1: Enable Steam Guard Before You List Anything',
@@ -42,7 +48,7 @@ export const posts: Post[] = [
             },
             {
                 heading: 'Step 3: Price Your CS2 Skins to Sell',
-                text: 'SkinSlinger fetches your live Steam inventory and shows current Steam Community Market prices as a reference. The sell queue lets you price from 60% to 100% of market reference price. CS2 skins priced at 80% to 85% of Steam Market value sell within hours on active days. Skins priced at or above Steam Market value rarely sell because buyers can simply use Steam instead. The optimal price depends on how quickly you want liquidity: 75% moves items in under a day, 90% may take several days but captures more value.',
+                text: 'SkinSlinger fetches your live Steam inventory and shows current Steam Community Market prices as a reference. You can list anywhere from 10% of the reference price up to 3x it, so a skin with valuable stickers or a rare pattern can be priced above the reference. CS2 skins priced at 80% to 85% of Steam Market value sell within hours on active days. Skins priced at or above Steam Market value rarely sell because buyers can simply use Steam instead. The optimal price depends on how quickly you want liquidity: 75% moves items in under a day, 90% may take several days but captures more value.',
             },
             {
                 heading: 'Step 4: Send the Trade Offer When a Sale Triggers',
@@ -54,10 +60,10 @@ export const posts: Post[] = [
             },
             {
                 heading: 'FAQ',
-                text: 'Do I need to verify my identity to sell CS2 skins on SkinSlinger? No. An email address and a connected Steam account are the only requirements. How quickly does USDC credit after a sale? 8 days after SkinSlinger confirms delivery. The hold covers Steam\'s trade-reversal window, so a buyer cannot receive an item, reverse the trade, and keep the money. Can I sell Dota 2, Rust, and TF2 skins too? Yes, SkinSlinger supports all four major Steam games under the same account with the same 0% sales fee.',
+                text: 'Do I need to verify my identity to sell CS2 skins on SkinSlinger? No. You sign in with Steam and add your trade URL; nothing else is required. How quickly does USDC credit after a sale? 8 days after SkinSlinger confirms delivery. The hold covers Steam\'s trade-reversal window, so a buyer cannot receive an item, reverse the trade, and keep the money. Can I sell Dota 2, Rust, and TF2 skins too? Yes, SkinSlinger supports all four major Steam games under the same account with the same 0% sales fee.',
             },
         ],
-        authorPerspective: 'The Steam Wallet lock-in is a bigger problem than the 15% fee itself, and most sellers do not fully register this until they have accumulated a balance they cannot spend. I have spoken to players sitting on $300 of Steam credit from past sales who cannot use it for anything because they do not play any Steam games regularly. The fee is visible and annoying. The lock-in is silent and permanent. Any serious volume of CS2 trading should happen on a peer-to-peer platform that pays in real currency, not Steam credit.',
+        authorPerspective: 'The Steam Wallet lock-in is a bigger problem than the 15% fee itself, and most sellers do not fully register this until they have accumulated a balance they cannot spend. We have spoken to players sitting on $300 of Steam credit from past sales who cannot use it for anything because they do not play any Steam games regularly. The fee is visible and annoying. The lock-in is silent and permanent. Any serious volume of CS2 trading should happen on a peer-to-peer platform that pays in real currency, not Steam credit.',
         sources: [
             { label: 'Steam Community Market fee structure', url: 'https://steamcommunity.com/market/' },
             { label: 'Steam Guard Mobile Authenticator', url: 'https://store.steampowered.com/mobile' },
@@ -69,6 +75,8 @@ export const posts: Post[] = [
         slug: 'cs2-float-value-explained',
         title: 'CS2 Float Value Explained: What It Is and How It Affects Price',
         date: 'June 2, 2026',
+        updated: 'November 16, 2026',
+        games: ['cs2'],
         summary: 'Float value is permanent, set at unboxing, and affects CS2 skin prices in ways that vary dramatically by finish type. Here is what actually matters before you buy.',
         image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyLwlcK3wiFO0POlPPNSI_-RHGavyet3pvgnTnuylk5-5m2EzI6peC_FbwN0XsN5R7Fet0HqltbgMLy0tQfe34hHxTK-0H2H-GppPg`,
         tldr: 'Float value is a number between 0.00 and 1.00 assigned at unboxing that never changes. It determines how worn a CS2 skin looks, but the visual impact varies enormously by finish. Metallic finishes like Dopplers and Fades are barely affected by float. Texture-based finishes like Rust Coat and Safari Mesh change dramatically. Targeting the low end of Field-Tested is the best value position in most cases.',
@@ -82,15 +90,15 @@ export const posts: Post[] = [
             },
             {
                 heading: 'Float Has Different Impact Depending on the Finish',
-                text: 'This is the nuance most buyers miss. Float value has almost no visual impact on certain finishes and enormous impact on others. A Doppler or Fade finish looks nearly identical at 0.01 versus 0.06 because these finishes are metallic and do not show texture wear visibly. A Rust Coat or Safari Mesh finish looks completely different at 0.16 versus 0.35 because the base texture shows through heavily at higher floats. When buying a solid-colour or metal-pattern skin, float matters less. When buying a natural-texture or paint-chip finish, float is the critical variable.',
+                text: 'This is the nuance most buyers miss. Float value has almost no visual impact on certain finishes and enormous impact on others. A Doppler or Fade finish looks nearly identical at 0.01 versus 0.06 because these finishes are metallic and do not show texture wear visibly. A Safari Mesh or Forest DDPAT finish looks completely different at 0.16 versus 0.35 because the base texture shows through heavily at higher floats. When buying a solid-colour or metal-pattern skin, float matters less. When buying a natural-texture or paint-chip finish, float is the critical variable.',
             },
             {
                 heading: 'Why Low-Float Skins Command Price Premiums',
-                text: 'The premium for low floats is highest on skins where wear is most visible. A Factory New AK-47 Redline typically trades at 50% to 80% above a Field-Tested one, depending on how close to the FT floor the FT item is. On knives, where the blade is always visible during inspects, low floats command even larger premiums. A Karambit at 0.01 can trade at 2x the price of the same skin at 0.15. Conversely, for a Doppler where the pattern is what buyers are paying for, the float premium is minimal and a Field-Tested Doppler is almost always a better value purchase than Factory New.',
+                text: 'The premium for low floats is highest on skins where wear is most visible. A Minimal Wear AK-47 Redline trades well above a Field-Tested one, and within Field-Tested a 0.16 copy sells for more than a 0.37 one. On knives, where the blade is always visible during inspects, low floats command even larger premiums. A Karambit at 0.01 can trade at 2x the price of the same skin at 0.15. Conversely, for a Doppler where the pattern is what buyers are paying for, the float premium is minimal. Dopplers only come in Factory New and Minimal Wear, and a Minimal Wear Doppler is usually the better value purchase.',
             },
             {
                 heading: 'Pattern Index: What It Is and When It Matters',
-                text: 'Every CS2 skin also has a pattern seed between 0 and 999 that determines how the artwork maps onto the weapon model. For most skins the pattern difference is invisible. For a small number of skins it is the single largest price driver. The AK-47 Case Hardened has an active community that grades each seed by how much blue appears on the top-facing side of the rifle. Seeds 661, 670, and 321 are examples historically associated with high blue coverage and significant price premiums. The Karambit Doppler has four phases plus a rare Pearl variant: Phase 2 (full black) is the most sought-after and trades at a notable premium over Phase 3 or 4 with an equivalent float.',
+                text: 'Every CS2 skin also has a pattern seed between 0 and 999 that determines how the artwork maps onto the weapon model. For most skins the pattern difference is invisible. For a small number of skins it is the single largest price driver. The AK-47 Case Hardened has an active community that grades each seed by how much blue appears on the top-facing side of the rifle. Seeds 661, 670, and 321 are examples historically associated with high blue coverage and significant price premiums. The Karambit Doppler has four phases plus the rare Ruby, Sapphire and Black Pearl variants. Phase 2, with the most pink and purple, is the most sought-after of the four and trades at a premium over Phase 1 or 3 with an equivalent float.',
             },
             {
                 heading: 'The Best Float Range to Target as a Buyer',
@@ -101,7 +109,7 @@ export const posts: Post[] = [
                 text: 'Can float value ever change? No. Float is assigned at unboxing and is immutable. Does float affect game performance? No, float is purely cosmetic. How do I check float on a skin I already own? Use CSGOFloat with your item\'s Steam inspect link. Is float the same as wear tier? No. Wear tier is a label derived from the float range. Two items in the same tier can have significantly different floats and look visibly different.',
             },
         ],
-        authorPerspective: 'The Doppler finish is probably the most misunderstood category in CS2 buying because people apply the same float logic they use for texture-based skins. A Field-Tested Karambit Doppler Phase 2 at 0.20 looks identical to a Factory New one in every practical context, yet the Factory New version often commands a 15% to 25% premium. That premium is almost entirely driven by buyers who have not internalised how metallic finishes interact with float. If you are buying a Doppler or Fade at any tier, skip the FN premium and put that money toward a better phase or a lower float on a finish that actually changes with wear.',
+        authorPerspective: 'The Doppler finish is probably the most misunderstood category in CS2 buying because people apply the same float logic they use for texture-based skins. A Karambit Doppler Phase 2 at 0.075, which counts as Minimal Wear, looks identical to a Factory New one in every practical context, yet the Factory New version often commands a premium. That premium is almost entirely driven by buyers who have not internalised how metallic finishes interact with float. If you are buying a Doppler or Fade, consider skipping the FN premium for a Minimal Wear copy and put that money toward a better phase or a lower float on a finish that actually changes with wear.',
         sources: [
             { label: 'CSGOFloat: inspect and verify CS2 float values', url: 'https://csgofloat.com/' },
             { label: 'Steam Community Market: CS2 skins', url: 'https://steamcommunity.com/market/search?appid=730' },
@@ -112,12 +120,14 @@ export const posts: Post[] = [
         slug: 'buy-cs2-skins-no-kyc',
         title: 'Buy and Sell CS2 Skins with No KYC or ID Verification',
         date: 'May 28, 2026',
-        summary: 'SkinSlinger processes payments in USDC on Polygon rather than fiat banking, which removes the regulatory trigger for identity verification. Here is exactly how it works.',
+        updated: 'November 16, 2026',
+        games: ['cs2'],
+        summary: 'SkinSlinger takes payments in USDC on Polygon rather than through banks or card processors, and does not ask for identity documents. Here is exactly how it works.',
         image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL6kJ_m-B1Q7uCvZaZkNM-SA1iUzv5mvOR7cDm7lA4i4gKJk4jxNWXFb1cpDJR2FOFbsBTql9bjYbzq7gPZiN1MxH7_2ytNuCdpte1UB_Ui5OSJ2GbkVqni`,
-        tldr: 'KYC on skin marketplaces is triggered by fiat payment processing, not by skin trading itself. SkinSlinger settles all payments in USDC on the Polygon network, removing the regulatory obligation. Account creation requires only an email and a Steam account. No government ID, no selfie, no review wait.',
+        tldr: 'KYC on skin marketplaces is triggered by fiat payment processing, not by skin trading itself. SkinSlinger settles all payments in USDC on the Polygon network instead. You sign in with Steam, with no separate sign-up form. No government ID, no selfie, no review wait.',
         body: [
             {
-                text: 'KYC requirements on CS2 marketplaces exist for one specific reason: platforms that process fiat currency withdrawals via bank transfer or card payment operate under anti-money-laundering regulations that mandate identity verification. That compliance obligation is triggered by the payment rails they use, not by the activity of trading game items. SkinSlinger bypasses this entirely by holding balances in USDC on the Polygon network and processing all withdrawals as on-chain transfers. No fiat payment processor means no regulatory trigger for identity collection.',
+                text: 'KYC requirements on CS2 marketplaces exist for one specific reason: platforms that process fiat currency withdrawals via bank transfer or card payment operate under anti-money-laundering regulations that mandate identity verification. That compliance obligation is triggered by the payment rails they use, not by the activity of trading game items. SkinSlinger does not use those payment rails: balances are held in USDC on the Polygon network and all withdrawals are on-chain transfers, which is why it does not collect identity documents.',
             },
             {
                 heading: 'What USDC on Polygon Actually Means',
@@ -125,11 +135,11 @@ export const posts: Post[] = [
             },
             {
                 heading: 'What Information SkinSlinger Actually Stores',
-                text: 'Account creation requires an email address, verified via a one-time confirmation link. Connecting Steam uses Valve\'s own OAuth flow: your Steam credentials never touch SkinSlinger\'s servers. After connecting, SkinSlinger stores your Steam ID and trade URL. Passwords are stored as bcrypt hashes. No government ID, no proof of address, no identity documents of any kind. The data footprint is intentionally minimal because nothing beyond an email and Steam account is required to operate a skin marketplace.',
+                text: 'There is no sign-up form and no password. You sign in through Steam\'s own login page, so your Steam credentials never touch SkinSlinger\'s servers. SkinSlinger stores your Steam ID, your public Steam name and avatar, and the trade URL you add. An email address is optional and only used to notify you of sales. No government ID, no proof of address, no identity documents of any kind.',
             },
             {
                 heading: 'How Fraud Prevention Works Without ID',
-                text: 'Most of what KYC prevents in skin trading is chargeback fraud: a buyer pays with a card, receives the item, then disputes the charge with their bank. Crypto payments are irreversible by design, which eliminates this attack vector entirely without requiring identity documents. Trade fraud is handled through Steam inventory verification. When a CS2 item is sold, SkinSlinger monitors the buyer\'s Steam inventory for the specific asset ID of that item. Payment is released to the seller only after the item is confirmed present. KYC documents add nothing to this verification.',
+                text: 'Most of what KYC prevents in skin trading is chargeback fraud: a buyer pays with a card, receives the item, then disputes the charge with their bank. Crypto payments are irreversible by design, which eliminates this attack vector entirely without requiring identity documents. Trade fraud is handled through Steam inventory verification. When a CS2 item is sold, SkinSlinger checks the buyer\'s Steam inventory for the item. Payment is released to the seller only after the item is confirmed present and an 8-day hold, covering Steam\'s trade-reversal window, has passed. KYC documents add nothing to this verification.',
             },
             {
                 heading: 'The Practical Tradeoff',
@@ -137,10 +147,10 @@ export const posts: Post[] = [
             },
             {
                 heading: 'FAQ',
-                text: 'Is it legal to buy and sell CS2 skins without KYC? Yes. Selling game cosmetics is legal in virtually all jurisdictions. KYC is a compliance choice driven by payment processing model. Does SkinSlinger ever ask for ID? No, not for sign-up, not for trading, and not for withdrawals. What if I want to convert USDC to my local currency? Transfer to any major exchange (Coinbase, Kraken, Binance) and sell. The conversion takes under two minutes and costs under 0.5%.',
+                text: 'Is it legal to buy and sell CS2 skins without KYC? Trading game items is legal in most countries, but rules on crypto and on declaring trading income vary, so check the rules where you live. Does SkinSlinger ever ask for ID? No, not for sign-up, not for trading, and not for withdrawals. What if I want to convert USDC to my local currency? Transfer to any major exchange (Coinbase, Kraken, Binance) and sell. The conversion takes under two minutes and costs under 0.5%.',
             },
         ],
-        authorPerspective: 'The most common objection I hear to no-KYC platforms is "if there\'s no ID check, how do you know you are not helping criminals launder money?". The answer is that the activity being monitored in AML frameworks is the movement of fiat currency, not the exchange of game cosmetics. A person selling a $50 CS2 knife and receiving $50 in USDC is not a money laundering vector that requires a passport to monitor. The KYC requirements on large skin platforms exist because those platforms chose to build fiat payment infrastructure that comes with regulatory obligations attached. Platforms that do not use fiat payment rails do not inherit those obligations.',
+        authorPerspective: 'The most common objection we hear to no-KYC platforms is "if there\'s no ID check, how do you know you are not helping criminals launder money?". The answer is that the activity being monitored in AML frameworks is the movement of fiat currency, not the exchange of game cosmetics. A person selling a $50 CS2 knife and receiving $50 in USDC is not a money laundering vector that requires a passport to monitor. The KYC requirements on large skin platforms exist because those platforms chose to build fiat payment infrastructure that comes with regulatory obligations attached. Platforms that do not use fiat payment rails do not inherit those obligations.',
         sources: [
             { label: 'USDC reserve reports: Circle', url: 'https://www.circle.com/en/usdc' },
             { label: 'Polygon network', url: 'https://polygon.technology/' },
@@ -151,9 +161,11 @@ export const posts: Post[] = [
         slug: 'best-budget-cs2-knives-2026',
         title: 'Best Budget CS2 Knives in 2026',
         date: 'June 9, 2026',
+        updated: 'November 16, 2026',
+        games: ['cs2'],
         summary: 'CS2 knives under $150 ranked by visual quality, price stability, and what most budget knife guides get wrong about StatTrak premiums and pattern seeds.',
         image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJKz2lu_XuWbwcuyMESA4Fdl-4nnpU7iQA3-kKnr8ytd6s25YaBiN_2SBWKCj7ghsrRrTHDnzB8h4mTRw9iudC_DPFVyCsF3R-Zc4xK_ldXgNb7qsgDAy9USS1NPX9M`,
-        tldr: 'The best budget CS2 knives in 2026 are the Navaja ($40-65), Gut ($55-90), Stiletto ($70-115), Paracord ($65-90), and Talon ($90-135) in that price order. Avoid the StatTrak premium in this tier: it costs 40-60% more for no visual difference. Doppler finish at Field-Tested quality looks almost identical to Factory New on any budget knife because metallic finishes do not show wear the way texture-based finishes do.',
+        tldr: 'The best budget CS2 knives in 2026 are the Navaja ($40-65), Gut ($55-90), Stiletto ($70-115), Paracord ($65-90), and Talon ($90-135) in that price order. Avoid the StatTrak premium in this tier: it costs 40-60% more for no visual difference. Doppler and Fade only come in Factory New and Minimal Wear, and a Minimal Wear copy looks almost identical to Factory New because metallic finishes do not show wear the way texture-based finishes do.',
         body: [
             {
                 text: 'The CS2 knife market below $150 is larger and more nuanced than most guides acknowledge. The common advice is to buy the cheapest knife in a clean finish. The better advice is to understand which premiums are worth paying and which are not. StatTrak variants cost 40% to 60% more than non-StatTrak at the same float and finish on budget knives. That premium reflects rarity, not visual difference. Pattern seeds rarely command meaningful premiums on budget finishes like Stained or Forest DDPAT. Spending extra on pattern at this tier is almost always a mistake.',
@@ -161,12 +173,12 @@ export const posts: Post[] = [
             {
                 heading: 'Navaja Knife ($40 to $65)',
                 image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJKz2lu_XuWbwcuyMESA4Fdl-4nnpU7iQA3-kKnr8ytd6s2pcbR-Oc-ZD2SbyuB_tuQnGXu1kBxw62_dwtird3qXZwQgXJV0E-4PtESxl4ezYr6x4FaMjI4UyzK-0H1iy36efQ`,
-                text: 'The Navaja is the entry point for CS2 knives. Field-Tested Stained and Forest DDPAT variants trade between $40 and $55. The flip-open inspect animation is clean. The Doppler finish in Field-Tested starts at $60 to $70 and is arguably a better buy than the cheaper finishes: Dopplers are metallic and do not show wear visibly, so a Field-Tested Navaja Doppler looks practically identical to a Factory New one at a fraction of the price. Phase 2 (black with red accent) and Phase 4 (blue to black gradient) are the most visually interesting phases on a Navaja. Avoid paying the pattern premium for Phase 1 at this price tier.',
+                text: 'The Navaja is the entry point for CS2 knives. Field-Tested Stained and Forest DDPAT variants trade between $40 and $55. The flip-open inspect animation is clean. The Doppler finish in Minimal Wear starts at $60 to $70 and is arguably a better buy than the cheaper finishes: Dopplers are metallic and do not show wear visibly, so a Minimal Wear Navaja Doppler looks practically identical to a Factory New one for less. Phase 2 (pink and purple) and Phase 4 (blue and purple) are the most visually interesting phases on a Navaja. Avoid paying the pattern premium for Phase 1 at this price tier.',
             },
             {
                 heading: 'Gut Knife ($55 to $90)',
                 image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJKz2lu_XuWbwcuyMESA4Fdl-4nnpU7iQA3-kKnr8ytd6s2pfbAjd6TAXDSSkeh3trdtTCy1zUV2t2vTyoyrIHzDalAgCsN1ROcO40O6wMqnab0rKy1qHw`,
-                text: 'The Gut Knife has the longest price history of any CS2 knife, having been in the original CS:GO pool since 2013. That history translates to reliable resale value and a well-established price floor. Field-Tested Gut Knife Doppler trades at $70 to $90. The gut hook on the spine is the visual identifier that makes it distinctive. Fade finish is one of the cleaner budget options at this tier: the yellow-to-pink-to-purple gradient is a metallic finish where float has minimal visual impact, so a Field-Tested Fade at 0.20 looks nearly identical to Factory New at $25 to $35 less.',
+                text: 'The Gut Knife has the longest price history of any CS2 knife, having been in the original CS:GO pool since 2013. That history translates to reliable resale value and a well-established price floor. A Minimal Wear Gut Knife Doppler trades at $70 to $90. The gut hook on the spine is the visual identifier that makes it distinctive. Fade finish is one of the cleaner budget options at this tier: the yellow-to-pink-to-purple gradient is a metallic finish where float has minimal visual impact. Fade only comes in Factory New and Minimal Wear, and a Minimal Wear copy looks nearly identical to Factory New for less.',
             },
             {
                 heading: 'Stiletto Knife ($70 to $115)',
@@ -176,19 +188,19 @@ export const posts: Post[] = [
             {
                 heading: 'Paracord Knife ($65 to $90)',
                 image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJKz2lu_XuWbwcuyMESA4Fdl-4nnpU7iQA3-kKnr8ytd6s2tZ7ZpbqWRXmWTmbsm5bU5TXu3lkR_5j_Swor8JC_BPFVxWJd1FuID4RW7w9b5d7S1z-U4Rao`,
-                text: 'The Paracord is the most underpriced knife in the budget tier. It is frequently listed $10 to $20 below a comparable Stiletto despite offering a more distinctive aesthetic: the cord wrap on the handle is unique to this knife and remains visually clean regardless of float because wear only shows on the blade. This means the case for buying Field-Tested over Minimal Wear is even stronger on the Paracord than on other knives. Doppler and Slaughter are the strongest finish choices.',
+                text: 'The Paracord is the most underpriced knife in the budget tier. It is frequently listed $10 to $20 below a comparable Stiletto despite offering a more distinctive aesthetic: the cord wrap on the handle is unique to this knife and remains visually clean regardless of float because wear only shows on the blade. This means the case for buying Field-Tested over Minimal Wear is even stronger on the Paracord than on other knives. Fade and Slaughter are the strongest finish choices.',
             },
             {
                 heading: 'Talon Knife ($90 to $135)',
                 image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJKz2lu_XuWbwcuyMESA4Fdl-4nnpU7iQA3-kKnr8ytd6s25YaBiN_2SBWKCj7ghsrRrTHDnzB8h4mTRw9iudC_DPFVyCsF3R-Zc4xK_ldXgNb7qsgDAy9USS1NPX9M`,
-                text: 'The Talon Knife sits at the top of the budget tier and has one specific advantage: the inspect animation. The pull-out motion is unique among budget knives and draws comparisons to the Karambit at a significantly lower price point. A Field-Tested Talon in Rust Coat or Safari Mesh trades at $90 to $115. Rust Coat Battle-Scarred is a specific buying opportunity: the finish is designed to look weathered and a higher float fits the aesthetic intentionally. Battle-Scarred Talons in Rust Coat trade at $70 to $85 and look intentionally aged rather than neglected.',
+                text: 'The Talon Knife sits at the top of the budget tier and has one specific advantage: the inspect animation. The pull-out motion is unique among budget knives and draws comparisons to the Karambit at a significantly lower price point. A Field-Tested Talon in Safari Mesh trades at $90 to $115. Rust Coat is a specific buying opportunity: it only comes in Well-Worn and Battle-Scarred, and the finish is designed to look weathered, so a higher float fits the aesthetic intentionally. Battle-Scarred Talons in Rust Coat trade at $70 to $85 and look intentionally aged rather than neglected.',
             },
             {
                 heading: 'FAQ',
                 text: 'Is StatTrak worth buying on budget CS2 knives? In most cases no. StatTrak variants cost 40% to 60% more for no visual difference. The premium only makes sense if you specifically want the kill counter for collection purposes. Which budget knife has the best resale value? The Gut Knife has the most stable long-term price history due to its age in the game. The Talon has had stronger recent growth. Does float matter as much on knives as on rifles? Yes, potentially more so. Knife blades are visible during inspect animations that players trigger regularly, so wear shows more frequently.',
             },
         ],
-        authorPerspective: 'The Paracord Knife is the most consistent value in the budget CS2 knife market and it is chronically overlooked because it was released in Operation Riptide alongside the Stiletto and gets less coverage. Every time I have compared a Paracord and a Stiletto in the same finish at similar floats, the Paracord is listed cheaper. The cord wrap handle is the kind of design element that photographs well in inventories and looks clean in-game, and the wear-only-shows-on-blade property means you can buy a low-float Field-Tested one and have it look indistinguishable from Minimal Wear. If the choice is between a Stiletto Slaughter at $100 and a Paracord Slaughter at $85, the Paracord is almost always the better buy.',
+        authorPerspective: 'The Paracord Knife is the most consistent value in the budget CS2 knife market and it is chronically overlooked because it arrived with Operation Shattered Web in 2019 and gets less coverage than the Stiletto. Every time we have compared a Paracord and a Stiletto in the same finish at similar floats, the Paracord is listed cheaper. The cord wrap handle is the kind of design element that photographs well in inventories and looks clean in-game, and the wear-only-shows-on-blade property means you can buy a low-float Field-Tested one and have it look indistinguishable from Minimal Wear. If the choice is between a Stiletto Slaughter at $100 and a Paracord Slaughter at $85, the Paracord is almost always the better buy.',
         sources: [
             { label: 'Steam Community Market: CS2 knives', url: 'https://steamcommunity.com/market/search?appid=730&q=knife' },
             { label: 'CSGOFloat: float and pattern verification', url: 'https://csgofloat.com/' },
@@ -199,12 +211,14 @@ export const posts: Post[] = [
         slug: 'crypto-dota2-skin-buying-guide',
         title: 'Crypto-Based Dota 2 Skin Buying: Low-Fee 2026 Guide',
         date: 'June 8, 2026',
-        summary: 'Steam charges Dota 2 buyers a 5% fee on top of every listing price, on top of the 15% seller fee. Here is how buying with crypto on a third-party marketplace eliminates both.',
+        updated: 'November 16, 2026',
+        games: ['dota2'],
+        summary: 'Steam keeps about 13% of every Dota 2 Market sale and only accepts fiat or Wallet credit. Here is how buying with crypto on a peer-to-peer marketplace avoids both.',
         image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttydbPaERSR0Wqmu7LAocGIyi3kajH_jR1c-zOHSF4Blm_Ibw5U7hSBj_mqnk-C9U4c2rabBoMr6SC2KVkLgl5OA-TC21lxx-sGuGwtz6eS2ROw92CcBxRLEIshHrkNDkKaq8sPDxdt5E`,
-        tldr: 'Steam does not accept crypto and adds a 5% buyer fee on top of every Dota 2 listing price. Third-party crypto marketplaces like SkinSlinger charge 0% on sales and show all-in prices. For Dota 2 items above $20, the fee savings are substantial. Deposits are in USDC on Polygon, which avoids Bitcoin network fees and price volatility.',
+        tldr: 'Steam does not accept crypto, and Valve\'s cut is built into every Dota 2 Market price, so the seller receives only about 87% of what the buyer pays. Peer-to-peer crypto marketplaces like SkinSlinger charge 0% on sales, so sellers can list lower and still earn more. For Dota 2 items above $20, the fee savings are substantial. Deposits are in USDC on Polygon, which avoids Bitcoin network fees and price volatility.',
         body: [
             {
-                text: 'Buying Dota 2 skins on the Steam Community Market has a fee structure most players do not notice until they see the checkout total. The displayed listing price is what the seller receives after the 10% Dota 2 game fee and 5% Steam platform fee are deducted from the seller\'s proceeds. As a buyer, you pay the listed price plus a separate 5% buyer fee added at checkout. A Dota 2 Arcana listed at $30 costs the buyer $31.50 and nets the seller $25.50. Third-party marketplaces that accept crypto display all-in prices: what you see is what you pay.',
+                text: 'Buying Dota 2 skins on the Steam Community Market has a fee structure most players do not notice, because it is built into the price. The price a buyer sees includes a 10% Dota 2 game fee and a 5% Steam fee, both calculated on what the seller receives. A Dota 2 Arcana that sells for $30 nets the seller about $26. On a peer-to-peer marketplace with no sales fee, that seller could list the same Arcana at $27, earn more, and still save the buyer $3.',
             },
             {
                 heading: 'Why Steam Removed Crypto as a Payment Method',
@@ -212,11 +226,11 @@ export const posts: Post[] = [
             },
             {
                 heading: 'How to Buy Dota 2 Skins With Crypto on SkinSlinger',
-                text: 'Deposit USDC on Polygon to your SkinSlinger balance. Deposits typically confirm in under 2 minutes. Browse the Dota 2 listings and purchase the item you want. SkinSlinger notifies the seller, who sends a Steam trade offer to your account. You accept in the Steam client and the item appears in your inventory. SkinSlinger charges 0% on Dota 2 purchases, compared to the 5% buyer fee on Steam.',
+                text: 'Deposit USDC on Polygon to your SkinSlinger balance. Deposits typically confirm in under 2 minutes. Browse the Dota 2 listings and purchase the item you want. SkinSlinger notifies the seller, who sends a Steam trade offer to your account. You accept in the Steam client and the item appears in your inventory. SkinSlinger charges no fee on Dota 2 purchases or sales.',
             },
             {
                 heading: 'Which Dota 2 Items Are Worth Buying Through a Crypto Marketplace',
-                text: 'The fee savings from bypassing Steam scale directly with item price. On a $10 Dota 2 item the saving is $0.50 (5% buyer fee avoided). On a $60 Arcana it is $3 (buyer fee) plus the seller pricing discount that occurs because third-party sellers price lower to attract buyers. In practice, the same Arcana often lists 5% to 10% below Steam Market value on third-party platforms. A $60 Arcana on Steam costs $63 after the buyer fee. The same item on SkinSlinger at a 7% discount from Steam Market costs $55.80 with no buyer fee. The total difference is $7.20 or 11.4% on a single purchase.',
+                text: 'The savings from bypassing Steam scale directly with item price, because Valve\'s roughly 13% cut grows with it. A seller of a $60 Arcana on Steam nets about $52. On SkinSlinger the same seller earns more listing at $56, which is why the same item often lists below Steam Market value on third-party platforms. On a $10 item the gap is around a dollar, so the difference matters most on Arcanas and other expensive items.',
             },
             {
                 heading: 'Avoiding the 7-Day Trade Hold on Dota 2 Items',
@@ -228,10 +242,10 @@ export const posts: Post[] = [
             },
             {
                 heading: 'FAQ',
-                text: 'Does Steam accept cryptocurrency? No, Valve removed Bitcoin in 2017 and has not added any cryptocurrency since. What is the buyer fee on Steam Dota 2 purchases? Approximately 5% added on top of the listed price at checkout. Can I resell a Dota 2 skin bought with crypto? Yes, Dota 2 items can be relisted on SkinSlinger or any other marketplace once received. Does buying with crypto on a third-party marketplace void any Steam account standing? No, receiving items via Steam trade offers is a standard Steam mechanic with no special account implications.',
+                text: 'Does Steam accept cryptocurrency? No, Valve removed Bitcoin in 2017 and has not added any cryptocurrency since. Does Steam add a fee at checkout for Dota 2 purchases? No. Valve\'s cut is already included in the listed price and comes out of what the seller receives. Can I resell a Dota 2 skin bought with crypto? Yes, Dota 2 items can be relisted on SkinSlinger or any other marketplace once received. Does buying with crypto on a third-party marketplace void any Steam account standing? No, receiving items via Steam trade offers is a standard Steam mechanic with no special account implications.',
             },
         ],
-        authorPerspective: 'The buyer fee on Steam is the most underappreciated cost in Dota 2 skin trading. When I compare prices for the same Dota 2 Arcana across Steam and SkinSlinger, the effective price difference for the buyer is almost always larger than the headline listing price difference because Steam adds 5% at checkout that does not appear in the browsing price. Most people assume they are comparison shopping when they look at Steam Market prices versus third-party listings, but they are comparing seller-net prices on Steam against all-in prices on third-party platforms. The comparison is not apples-to-apples until you add the Steam buyer fee back in.',
+        authorPerspective: 'Steam\'s fee is the most underappreciated cost in Dota 2 skin trading because it is built into the price buyers see rather than added at checkout. When we compare the same Dota 2 Arcana across Steam and SkinSlinger, the Steam seller is receiving roughly 13% less than the buyer paid. A peer-to-peer seller keeps that margin, which is why the same item can list for less and still pay the seller more. Comparing prices across platforms only makes sense once you know which side of the fee each number sits on.',
         sources: [
             { label: 'Steam Dota 2 Community Market', url: 'https://steamcommunity.com/market/search?appid=570' },
             { label: 'USDC: Circle', url: 'https://www.circle.com/en/usdc' },
@@ -244,6 +258,8 @@ export const posts: Post[] = [
         slug: 'how-skin-deposits-work-on-marketplaces',
         title: 'How Skin Deposits Work on Marketplaces in 2026',
         date: 'June 7, 2026',
+        updated: 'November 16, 2026',
+        games: ['cs2', 'dota2', 'rust', 'tf2'],
         summary: 'Bot escrow removes item custody at deposit. P2P keeps your items in your inventory. Credit card deposits cost 2-3%. Crypto deposits cost near-zero. Here is how each model works and where the real risks are.',
         image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyL8ypexwiFO0P_6afVSKP-EAm6extF7teVgWiT9wh5_5zyAwo6oeSrDawUkCMN0QbEM5BO-wNazMe3qsgHZg4wQyy-t2jQJsHi3nDJ37A`,
         tldr: 'Skin deposits split into two types: item deposits via Steam trade offer and monetary deposits to fund your balance. Bot-based escrow takes custody of your items immediately. P2P platforms leave items in your inventory until sale. Credit card monetary deposits carry 2-3% processor fees. Crypto deposits on most platforms cost under $0.01. The API scam is the main attack vector for item deposits and is fully preventable by verifying bot profiles manually.',
@@ -276,7 +292,7 @@ export const posts: Post[] = [
                 text: 'What is an API scam in skin trading? An attack where an attacker registers a Steam API key on your account and substitutes a real marketplace trade offer with a fraudulent one. Prevented by revoking unauthorised API keys and verifying bot profiles manually. What is the cheapest way to fund a skin marketplace balance? Cryptocurrency. USDC on Polygon costs under $0.01 in network fees. Do P2P platforms have slower sales than bot-based platforms? Not necessarily, but they require the seller to send the trade offer rather than having it automated. Response time affects buyer experience.',
             },
         ],
-        authorPerspective: 'The API scam explanation in most trading guides focuses on the wrong part. They describe it as a "phishing attack" and tell you to use official links, which is correct but incomplete. The key mechanism is the Steam API key: once an attacker registers a key under your account, they can intercept and replace trade offers even on sessions you opened through legitimate links. The fix that most guides skip is to check steamcommunity.com/dev/apikey regularly and revoke any key you did not create yourself. I have seen accounts with attacker-registered API keys sitting dormant for months, waiting for a high-value trade to intercept. The API key check is a 10-second task that protects against the most costly attack in skin trading.',
+        authorPerspective: 'The API scam explanation in most trading guides focuses on the wrong part. They describe it as a "phishing attack" and tell you to use official links, which is correct but incomplete. The key mechanism is the Steam API key: once an attacker registers a key under your account, they can intercept and replace trade offers even on sessions you opened through legitimate links. The fix that most guides skip is to check steamcommunity.com/dev/apikey regularly and revoke any key you did not create yourself. We have seen accounts with attacker-registered API keys sitting dormant for months, waiting for a high-value trade to intercept. The API key check is a 10-second task that protects against the most costly attack in skin trading.',
         sources: [
             { label: 'Steam Trade Offers', url: 'https://steamcommunity.com/tradeoffer/' },
             { label: 'Steam API Key management', url: 'https://steamcommunity.com/dev/apikey' },
@@ -288,12 +304,14 @@ export const posts: Post[] = [
         slug: 'sell-dota2-rust-tf2-skins-no-kyc',
         title: 'How to Sell Dota 2, Rust, and TF2 Skins Without KYC',
         date: 'June 9, 2026',
+        updated: 'November 16, 2026',
+        games: ['dota2', 'rust', 'tf2'],
         summary: 'Dota 2, Rust, and TF2 each have different liquidity profiles on no-KYC marketplaces. Here is what moves, what does not, and how to price each game for a fast payout.',
         image: `${CDN}/6TMcQ7eX6E0EZl2byXi7vaVKyDk_zQLX05x6eLCFM9neAckxGDf7qU2e2gu64OnAeQ7835Je5WHNfCk4nReh8DEiv5dYO607rLc2Rv2_0wEIAYs`,
-        tldr: 'A no-KYC skins marketplace operates without identity verification because it settles payments in crypto rather than fiat, removing the regulatory obligation for KYC. Dota 2 arcanas and recent Immortals sell reliably. Rust weapon skins have the highest consistent volume. TF2 has thin liquidity except for Unusuals with top-tier effects. All three pay out in USDC on SkinSlinger with 0% seller fees.',
+        tldr: 'A no-KYC skins marketplace lets you trade without identity verification, and SkinSlinger settles payments in crypto rather than through banks. Dota 2 arcanas and recent Immortals sell reliably. Rust weapon skins have the highest consistent volume. TF2 has thin liquidity except for Unusuals with top-tier effects. All three pay out in USDC on SkinSlinger with 0% seller fees.',
         body: [
             {
-                text: 'A no-KYC skins marketplace lets you sell Dota 2, Rust, and TF2 items and receive real money without uploading government ID. The mechanism is payment infrastructure: platforms that process withdrawals through regulated fiat banking channels must comply with anti-money-laundering rules that mandate identity checks. Platforms that settle in cryptocurrency on-chain have a different compliance profile. SkinSlinger pays sellers in USDC on Polygon, which removes the regulatory trigger while still providing automated trade settlement.',
+                text: 'A no-KYC skins marketplace lets you sell Dota 2, Rust, and TF2 items and receive real money without uploading government ID. The mechanism is payment infrastructure: platforms that process withdrawals through regulated fiat banking channels must comply with anti-money-laundering rules that mandate identity checks. Platforms that settle in cryptocurrency on-chain have a different compliance profile. SkinSlinger pays sellers in USDC on Polygon, with automated trade settlement and no identity documents.',
             },
             {
                 heading: 'Selling Dota 2 Skins Without KYC: What Moves and What Does Not',
@@ -301,7 +319,7 @@ export const posts: Post[] = [
             },
             {
                 heading: 'Dota 2 Pricing on a No-KYC Marketplace',
-                text: 'Steam Community Market prices for Dota 2 are artificially elevated because sellers there accept Steam Wallet credit. Since Steam credit is worth less than real money for most sellers (it can only be spent on Steam), they price higher to compensate. On a no-KYC marketplace, sellers receive USDC and price competitively to attract buyers. For most Dota 2 items, listing at 5% to 8% below Steam Market value produces a fast sale while still netting more than the Steam payout after the 15% fee. Items priced at Steam Market parity on a third-party platform sell slowly because buyers who prefer the Steam ecosystem can save the 5% buyer fee by staying there.',
+                text: 'Steam Community Market prices for Dota 2 are artificially elevated because sellers there accept Steam Wallet credit. Since Steam credit is worth less than real money for most sellers (it can only be spent on Steam), they price higher to compensate. On a no-KYC marketplace, sellers receive USDC and price competitively to attract buyers. For most Dota 2 items, listing at 5% to 8% below Steam Market value produces a fast sale while still netting more than the Steam payout after the 15% fee. Items priced at Steam Market parity on a third-party platform sell slowly because buyers gain nothing by leaving Steam.',
             },
             {
                 heading: 'Selling Rust Skins Without KYC: Volume and Timing',
@@ -313,14 +331,14 @@ export const posts: Post[] = [
             },
             {
                 heading: 'How Settlement Works on a No-KYC Marketplace',
-                text: 'When a buyer purchases your Dota 2, Rust, or TF2 item on SkinSlinger, you receive an email and a notification on your Orders page. You send the Steam trade offer to the buyer\'s trade URL. SkinSlinger checks the buyer\'s Steam inventory for the item every 5 minutes. Once delivery is confirmed, the payment is held for 8 days to cover Steam\'s trade-reversal window, then credited to your USDC balance automatically.',
+                text: 'When a buyer purchases your Dota 2, Rust, or TF2 item on SkinSlinger, you receive an email and a notification on your Orders page. You send the Steam trade offer to the buyer\'s trade URL. SkinSlinger checks the buyer\'s Steam inventory for the item every 5 minutes. Once delivery is confirmed, the payment is held for 8 days, the same hold used for every game, then credited to your USDC balance automatically.',
             },
             {
                 heading: 'FAQ',
-                text: 'What is a no-KYC skins marketplace? A platform that allows buying and selling of game cosmetics without requiring government ID. These platforms settle payments in crypto, which removes the regulatory obligation for identity verification that applies to fiat-processing platforms. Can I sell all four games on one SkinSlinger account? Yes. One account covers CS2, Dota 2, Rust, and TF2 with the same trade URL and USDC wallet. What are the seller fees on SkinSlinger? 0% sales fee and 0% deposit fee. Withdrawal carries a flat 2% fee.',
+                text: 'What is a no-KYC skins marketplace? A platform that allows buying and selling of game cosmetics without requiring government ID. SkinSlinger settles payments in crypto rather than through banks or card processors. Can I sell all four games on one SkinSlinger account? Yes. One account covers CS2, Dota 2, Rust, and TF2 with the same trade URL and USDC wallet. What are the seller fees on SkinSlinger? 0% sales fee and 0% deposit fee. Withdrawals carry a 2.5% fee that falls to 0.5% as your trading volume grows.',
             },
         ],
-        authorPerspective: 'TF2 is the one game on this list where I would recommend a different strategy depending on item value. For Cosmetics under $30 and Strange weapons, a general skin marketplace like SkinSlinger works well: the buyer pool is large enough and the price is low enough that competitive pricing produces a fast sale. For Unusuals above $100, the dedicated TF2 trading community on backpack.tf and trading servers finds buyers faster because that is where serious TF2 collectors spend their time. The no-KYC settlement advantage still applies if you list on both, and SkinSlinger provides the payout infrastructure, but getting discovery right for high-value TF2 items requires meeting buyers where they already are.',
+        authorPerspective: 'TF2 is the one game on this list where we would recommend a different strategy depending on item value. For Cosmetics under $30 and Strange weapons, a general skin marketplace like SkinSlinger works well: the buyer pool is large enough and the price is low enough that competitive pricing produces a fast sale. For Unusuals above $100, the dedicated TF2 trading community on backpack.tf and trading servers finds buyers faster because that is where serious TF2 collectors spend their time. The no-KYC settlement advantage still applies if you list on both, and SkinSlinger provides the payout infrastructure, but getting discovery right for high-value TF2 items requires meeting buyers where they already are.',
         sources: [
             { label: 'SkinSlinger Dota 2 Marketplace', url: 'https://skinslinger.com/market/dota2' },
             { label: 'SkinSlinger Rust Marketplace', url: 'https://skinslinger.com/market/rust' },
@@ -333,9 +351,11 @@ export const posts: Post[] = [
         slug: 'lowest-fee-skins-marketplace',
         title: 'Lowest Fee Skins Marketplace in 2026: Full Fee Comparison',
         date: 'June 9, 2026',
-        summary: 'SkinSlinger (2.5% total), CSFloat (5.3%), CS.Money (7%), Skinport (8%), DMarket (9.5%), Steam Market (15%+): here is what each fee covers, where platforms hide costs, and how to calculate your actual cost per trade.',
+        updated: 'November 16, 2026',
+        games: ['cs2', 'dota2', 'rust', 'tf2'],
+        summary: 'SkinSlinger (2.5% total), CSFloat (5.3%), CS.Money (7%), Skinport (8%), DMarket (9.3%), Steam Market (15%+): here is what each fee covers, where platforms hide costs, and how to calculate your actual cost per trade.',
         image: '/logo.png',
-        tldr: 'Total fee comparisons across the six major skin marketplaces in 2026: SkinSlinger 2.5%, CSFloat 5.3%, CS.Money 7%, Skinport 8%, DMarket 9.5%, Steam Market 15%+. The headline sales fee is rarely the complete picture. CSFloat\'s 2.8% deposit fee, DMarket\'s 2.5% withdrawal fee, and Steam\'s permanent fund lock-in add costs that the sales percentage alone does not capture. Fee data sourced from pricempire.com.',
+        tldr: 'Total fee comparisons across the six major skin marketplaces in 2026: SkinSlinger 2.5%, CSFloat 5.3%, CS.Money 7%, Skinport 8%, DMarket 9.3%, Steam Market 15%+. The headline sales fee is rarely the complete picture. CSFloat\'s 2.8% deposit fee, DMarket\'s 2.5% withdrawal fee, and Steam\'s permanent fund lock-in add costs that the sales percentage alone does not capture. Fee data sourced from pricempire.com.',
         body: [
             {
                 text: 'Most skin marketplace fee comparisons show only the sales percentage. That number is the most visible cost but often not the largest one. A platform advertising a 2% sales fee may charge 2.8% to deposit funds, recovering more than the savings on sales. A 0% withdrawal fee is meaningless if proceeds are permanently locked as platform credit. This guide uses real fee data from pricempire.com to compare six platforms across all three fee types: sales, deposit, and withdrawal.',
@@ -350,7 +370,7 @@ export const posts: Post[] = [
             },
             {
                 heading: 'CS.Money: 7% Sales, 0% Deposit, 0% Withdrawal',
-                text: 'CS.Money charges a flat 7% sales fee with no deposit or withdrawal charges. For sellers who make infrequent large sales rather than frequent small ones, this structure is straightforward to calculate. The 7% is applied at point of sale, and there are no additional costs for moving money in or out. Compared to the Steam Community Market\'s 15%, CS.Money\'s 7% represents a significant saving, but it is still 3.5x the SkinSlinger withdrawal-only model for a typical seller.',
+                text: 'CS.Money charges a flat 7% sales fee with no deposit or withdrawal charges. For sellers who make infrequent large sales rather than frequent small ones, this structure is straightforward to calculate. The 7% is applied at point of sale, and there are no additional costs for moving money in or out. Compared to the Steam Community Market\'s 15%, CS.Money\'s 7% represents a significant saving, but it is still 2.8x the SkinSlinger withdrawal-only model for a typical seller.',
             },
             {
                 heading: 'Skinport: 8% Sales, 0% Deposit, 0% Withdrawal',
@@ -370,14 +390,14 @@ export const posts: Post[] = [
             },
             {
                 heading: 'Why Fee Structure Matters More Than Headline Percentage',
-                text: 'Platform fee structures are designed to make the most-visible number look competitive while recovering margin elsewhere. CSFloat\'s 2% sales fee is the lowest sales rate in this comparison, but its 2.8% deposit fee makes it the second-most-expensive total for an active buyer-seller. DMarket\'s 7% sales fee matches CS.Money, but the additional 2.5% withdrawal fee makes it the second-most-expensive for sellers who actually want to extract money. The only platform in this comparison where the visible fee is also the complete cost is SkinSlinger, where the 2.5% withdrawal fee is the only fee charged. Everything else is zero.',
+                text: 'Platform fee structures are designed to make the most-visible number look competitive while recovering margin elsewhere. CSFloat\'s 2% sales fee is the lowest sales rate in this comparison, but its 2.8% deposit fee more than doubles the real cost for an active buyer-seller. DMarket\'s 7% sales fee matches CS.Money, but the additional 2.5% withdrawal fee makes it the most expensive for sellers who actually want to extract money. The only platform in this comparison where the visible fee is also the complete cost is SkinSlinger, where the 2.5% withdrawal fee is the only fee charged. Everything else is zero.',
             },
             {
                 heading: 'FAQ',
                 text: 'What is the lowest fee skin marketplace in 2026? SkinSlinger charges 2.5% total (withdrawal only). No sales fee, no deposit fee. What does "total fee" mean in this comparison? The combined cost of sales fee, deposit fee, and withdrawal fee as a percentage of transaction value for a typical sell-and-withdraw cycle. Are these fees based on official sources? Fee data is sourced from pricempire.com. Individual platform terms may vary and should be verified directly before trading.',
             },
         ],
-        authorPerspective: 'The DMarket fee structure is the most misleading in this comparison because the 7% sales fee is competitive and prominently displayed, but the 2.5% withdrawal fee that turns it into 9.3% effective cost is much harder to find in their documentation. I have watched traders choose DMarket over lower-fee alternatives because they compared sales percentages and stopped there. The total-cost calculation is the only number that matters, and platforms that separate fees across multiple line items are almost always doing so because the total looks worse than any individual component.',
+        authorPerspective: 'The DMarket fee structure is the most misleading in this comparison because the 7% sales fee is competitive and prominently displayed, but the 2.5% withdrawal fee that turns it into 9.3% effective cost is much harder to find in their documentation. We have watched traders choose DMarket over lower-fee alternatives because they compared sales percentages and stopped there. The total-cost calculation is the only number that matters, and platforms that separate fees across multiple line items are almost always doing so because the total looks worse than any individual component.',
         sources: [
             { label: 'Skin marketplace fee data: pricempire.com', url: 'https://pricempire.com/cs2-marketplaces/' },
             { label: 'SkinSlinger fee structure', url: 'https://skinslinger.com' },
@@ -388,6 +408,8 @@ export const posts: Post[] = [
         slug: 'best-rust-skins-2026',
         title: 'Best Rust Skins to Buy and Sell in 2026',
         date: 'June 9, 2026',
+        updated: 'November 16, 2026',
+        games: ['rust'],
         summary: 'Rust weapon skins for the AK, LR-300, and MP5 have the highest resale volume outside CS2. Here is what holds value, what drops after events, and how to price for a fast sale.',
         image: `${CDN}/6TMcQ7eX6E0EZl2byXi7vaVKyDk_zQLX05x6eLCFM9neAckxGDf7qU2e2gu64OnAeQ7835FW7GLHfCk4nReh8DEiv5daPqk5pbI2Rf63y6_ODyQ`,
         tldr: 'Rust AK, LR-300, and MP5 weapon skins are the fastest-moving items on any Rust skin marketplace. Twitch drop and season pass skins spike immediately after events and drop 20-40% within two weeks. There is no float or pattern system in Rust: price is driven entirely by supply and demand. Listing at 5-8% below Steam Market value produces fast sales on third-party platforms.',
@@ -417,10 +439,10 @@ export const posts: Post[] = [
             },
             {
                 heading: 'FAQ',
-                text: 'Do Rust skins have float values like CS2? No. Every copy of a Rust skin is identical. There is no wear system. What are the fastest-selling Rust skins on a marketplace? AK, LR-300, and MP5 weapon skins with recognisable designs. Where do I sell Rust skins for real money without ID verification? SkinSlinger supports Rust skin selling with USDC payouts and no KYC. Can I buy Rust skins with crypto? Yes, deposit USDC on Polygon or ETH to fund a SkinSlinger balance and purchase Rust listings directly.',
+                text: 'Do Rust skins have float values like CS2? No. Every copy of a Rust skin is identical. There is no wear system. What are the fastest-selling Rust skins on a marketplace? AK, LR-300, and MP5 weapon skins with recognisable designs. Where do I sell Rust skins for real money without ID verification? SkinSlinger supports Rust skin selling with USDC payouts and no KYC. Can I buy Rust skins with crypto? Yes, deposit USDC on Polygon to fund a SkinSlinger balance and purchase Rust listings directly.',
             },
         ],
-        authorPerspective: 'The Rust skin market is underestimated by traders who come from CS2 because the lack of float and pattern variables makes it look simple. The complexity is in event timing. I have watched the same Rust AK skin go from $8 to $22 during a Twitch drop event and settle at $11 three weeks later. The window to profit is narrow and requires actually paying attention to when events start and when items unlock for trading. Rust rewards traders who track the Facepunch update schedule and event calendar more than traders who understand item-level quality distinctions. If you are willing to do that research, Rust has better short-term trading opportunities than most of the CS2 market.',
+        authorPerspective: 'The Rust skin market is underestimated by traders who come from CS2 because the lack of float and pattern variables makes it look simple. The complexity is in event timing. We have watched the same Rust AK skin go from $8 to $22 during a Twitch drop event and settle at $11 three weeks later. The window to profit is narrow and requires actually paying attention to when events start and when items unlock for trading. Rust rewards traders who track the Facepunch update schedule and event calendar more than traders who understand item-level quality distinctions. If you are willing to do that research, Rust has better short-term trading opportunities than most of the CS2 market.',
         sources: [
             { label: 'SkinSlinger Rust Marketplace', url: 'https://skinslinger.com/market/rust' },
             { label: 'Steam Community Market: Rust items', url: 'https://steamcommunity.com/market/search?appid=252490' },
@@ -431,6 +453,8 @@ export const posts: Post[] = [
         slug: 'sell-tf2-items-for-real-money',
         title: 'How to Sell TF2 Items for Real Money in 2026',
         date: 'June 9, 2026',
+        updated: 'November 16, 2026',
+        games: ['tf2'],
         summary: 'TF2 Unusuals with high-tier effects have real cash value, but most cosmetics and Strange weapons are worth under $5 on any marketplace. Here is what actually sells, where to list it, and how to avoid the thin-liquidity trap.',
         image: `${CDN}/IzMF03bi9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdEH9myp0erksICfSMf6UeRJpnqWSMU5OD2IwJkXVZnihXOjLx2Sk5MbUqMcbBnQz4ruyeU3f0VyTRIizcDgw4TLYxdjCMvGrzs677AXycBatzHWZYLOBTp3ofaciJPEY90NYO_2C9zhMlSEBxIsFDJly_niAXM-h3ynBKJpIGzHX3ONSH0vuPuxPC`,
         tldr: 'TF2 Unusuals with Burning Flames, Scorching Flames, or Circling Peace Sign effects are the only TF2 items with consistent cash-equivalent demand on general skin marketplaces. Standard cosmetics under $15 and most Strange weapons sell slowly. For high-value TF2 Unusuals, list on both SkinSlinger and TF2-specific tools (backpack.tf) simultaneously. SkinSlinger pays USDC with no KYC and 0% sales fee.',
@@ -452,7 +476,7 @@ export const posts: Post[] = [
             },
             {
                 heading: 'How the Sale and Payout Process Works',
-                text: 'When a TF2 item sells on SkinSlinger, the buyer purchases using their USDC balance. You receive an email notification and a trade request appears in your Orders page. Send the Steam trade offer to the buyer\'s trade URL. SkinSlinger monitors the buyer\'s inventory for the specific item. Once delivery is confirmed, your USDC balance is credited after an 8-day trade-reversal hold. The 0% sales fee means the full listing price credits to your balance. Withdraw to any Polygon-compatible wallet. No identity verification is required at any stage: account setup requires only email and Steam login.',
+                text: 'When a TF2 item sells on SkinSlinger, the buyer purchases using their USDC balance. You receive an email notification and a trade request appears in your Orders page. Send the Steam trade offer to the buyer\'s trade URL. SkinSlinger monitors the buyer\'s inventory for the specific item. Once delivery is confirmed, your USDC balance is credited after an 8-day hold. The 0% sales fee means the full listing price credits to your balance. Withdraw to any Polygon-compatible wallet. No identity verification is required at any stage: you only need to sign in with Steam.',
             },
             {
                 heading: 'TF2 Items That Do Not Sell Well on General Marketplaces',
@@ -460,10 +484,10 @@ export const posts: Post[] = [
             },
             {
                 heading: 'FAQ',
-                text: 'What TF2 items sell best on a general skin marketplace? Unusuals with first-tier particle effects (Burning Flames, Scorching Flames, Purple and Green Energy). High-value cosmetics over $50. What is a TF2 Unusual worth in real money? Depends entirely on the effect tier and hat desirability. First-tier effects on popular hats range from $50 to several hundred dollars. Third-tier effects on unpopular hats may be worth $5 to $15. Can I sell TF2 items on SkinSlinger without ID verification? Yes. SkinSlinger requires only an email and Steam account. Payouts are in USDC on Polygon with no KYC requirement. Are Strange weapons worth selling for real money? Only high-kill Stranges on popular weapons have premium value, and only within the TF2 community. On a general marketplace, Strange status adds little to price.',
+                text: 'What TF2 items sell best on a general skin marketplace? Unusuals with first-tier particle effects (Burning Flames, Scorching Flames, Purple and Green Energy). High-value cosmetics over $50. What is a TF2 Unusual worth in real money? Depends entirely on the effect tier and hat desirability. First-tier effects on popular hats range from $50 to several hundred dollars. Third-tier effects on unpopular hats may be worth $5 to $15. Can I sell TF2 items on SkinSlinger without ID verification? Yes. You only need to sign in with Steam. Payouts are in USDC on Polygon with no KYC requirement. Are Strange weapons worth selling for real money? Only high-kill Stranges on popular weapons have premium value, and only within the TF2 community. On a general marketplace, Strange status adds little to price.',
             },
         ],
-        authorPerspective: 'The TF2 economy is one of the most opaque in Steam trading for outsiders because almost all of its value signalling happens in a closed community that uses its own currency (keys) and its own price reference tools (backpack.tf). I have seen people list TF2 Unusuals on general marketplaces at backpack.tf key-equivalent prices and wait months with no buyer because the general marketplace audience does not know what keys are worth or how to evaluate effect tiers. The items that work on general marketplaces are the ones with visually obvious appeal: a hat that is clearly on fire (Burning Flames) needs no community context to attract a buyer. A hat with a subtle low-tier effect does. Know your audience when choosing where to list.',
+        authorPerspective: 'The TF2 economy is one of the most opaque in Steam trading for outsiders because almost all of its value signalling happens in a closed community that uses its own currency (keys) and its own price reference tools (backpack.tf). We have seen people list TF2 Unusuals on general marketplaces at backpack.tf key-equivalent prices and wait months with no buyer because the general marketplace audience does not know what keys are worth or how to evaluate effect tiers. The items that work on general marketplaces are the ones with visually obvious appeal: a hat that is clearly on fire (Burning Flames) needs no community context to attract a buyer. A hat with a subtle low-tier effect does. Know your audience when choosing where to list.',
         sources: [
             { label: 'SkinSlinger TF2 Marketplace', url: 'https://skinslinger.com/market/tf2' },
             { label: 'backpack.tf: TF2 community pricing', url: 'https://backpack.tf/' },
@@ -474,20 +498,22 @@ export const posts: Post[] = [
         slug: 'sell-rust-skins-for-real-money',
         title: 'How to Sell Rust Skins for Real Money in 2026',
         date: 'June 11, 2026',
+        updated: 'November 16, 2026',
+        games: ['rust'],
         summary: 'The Steam Market locks your Rust skin sales into Wallet credit. Here is how to sell Rust skins peer-to-peer for USDC you can actually withdraw, with 0% sales fee and no identity verification.',
         image: `${CDN}/6TMcQ7eX6E0EZl2byXi7vaVKyDk_zQLX05x6eLCFM9neAckxGDf7qU2e2gu64OnAeQ7835FW7GLHfCk4nReh8DEiv5daPqk5pbI2Rf63y6_ODyQ`,
-        tldr: 'You cannot cash out Rust skins through the Steam Community Market - proceeds are locked as Steam Wallet credit after a roughly 15% combined fee. Selling on SkinSlinger is peer-to-peer: you list at your own price, a buyer pays into escrow, you send the Steam trade offer, and the full price is released to you in USDC with a 0% sales fee and no KYC at any volume. The payment is released 8 days after delivery, once Steam\'s trade-reversal window has closed.',
+        tldr: 'You cannot cash out Rust skins through the Steam Community Market - proceeds are locked as Steam Wallet credit after a roughly 15% combined fee. Selling on SkinSlinger is peer-to-peer: you list at your own price, a buyer pays into escrow, you send the Steam trade offer, and the full price is released to you in USDC with a 0% sales fee and no KYC at any volume. The payment is released 8 days after delivery.',
         body: [
             {
                 text: 'Rust skins come from the item store, weekly drops, and Twitch drops, and many accumulate real market value over time. The catch is that the obvious place to sell them - the Steam Community Market - takes a combined fee of around 15% and pays you in Steam Wallet credit that can never be converted to real money. To actually cash out Rust skins, you need a third-party marketplace, and they differ a lot in fees, custody model, and verification requirements.',
             },
             {
                 heading: 'What to Check Before Choosing a Rust Marketplace',
-                text: 'Three things matter most. First, the fee structure: instant-sell sites typically pay 60% to 80% of market value, while peer-to-peer marketplaces let you set the price and charge a listing or sales fee on top. Second, custody: bot-based platforms hold your items on their accounts during the sale, which concentrates risk; peer-to-peer trades go directly from your inventory to the buyer. Third, KYC: many platforms advertise easy cash-outs but require identity documents once your withdrawals pass a threshold, which is exactly when you need them not to.',
+                text: 'Three things matter most. First, the fee structure: instant-sell sites typically pay 60% to 80% of market value, while peer-to-peer marketplaces let you set the price and charge a listing or sales fee on top. Second, custody: bot-based platforms hold your items on their accounts during the sale, which concentrates risk; peer-to-peer trades go directly from your inventory to the buyer. Third, KYC: many platforms advertise easy cash-outs but require identity documents once your withdrawals pass a threshold, so check the policy before you list.',
             },
             {
                 heading: 'Selling Rust Skins on SkinSlinger Step by Step',
-                text: 'Sign in with Steam and add your Steam trade URL - that is the entire onboarding, with no documents at any point. Open your inventory on SkinSlinger, which loads your tradeable Rust skins with current market reference prices, queue the items you want to sell, and set your prices. When a buyer orders, their payment is escrowed and you get notified. Send the Steam trade offer to the buyer\'s trade URL from your own account, and once the server verifies the item arrived in their inventory - it checks every 5 minutes - the full sale price lands in your USDC balance after an 8-day trade-reversal hold.',
+                text: 'Sign in with Steam and add your Steam trade URL - that is the entire onboarding, with no documents at any point. Open your inventory on SkinSlinger, which loads your tradeable Rust skins with current market reference prices, queue the items you want to sell, and set your prices. When a buyer orders, their payment is escrowed and you get notified. Send the Steam trade offer to the buyer\'s trade URL from your own account, and once the server verifies the item arrived in their inventory - it checks every 5 minutes - the full sale price lands in your USDC balance after an 8-day hold.',
             },
             {
                 heading: 'Pricing Rust Skins to Actually Sell',
@@ -512,6 +538,8 @@ export const posts: Post[] = [
         slug: 'sell-dota2-items-for-real-money',
         title: 'How to Sell Dota 2 Items for Real Money: Arcanas, Immortals & Sets',
         date: 'June 11, 2026',
+        updated: 'November 16, 2026',
+        games: ['dota2'],
         summary: 'Dota 2 arcanas and immortals hold real value, but Steam Wallet credit is a dead end. A practical guide to selling Dota 2 items peer-to-peer for withdrawable USDC with no KYC.',
         image: `${CDN}/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttydbPaERSR0Wqmu7LAocGIyi3kajH_jR1c-zOHSF4Blm_Ibw5U7hSBj_mqnk-C9U4c2rabBoMr6SC2KVkLgl5OA-TC21lxx-sGuGwtz6eS2ROw92CcBxRLEIshHrkNDkKaq8sPDxdt5E`,
         tldr: 'Tradeable Dota 2 items - arcanas, immortals, couriers, and sets - can be sold for real money on peer-to-peer marketplaces instead of being locked into Steam Wallet credit at a roughly 15% fee. On SkinSlinger you list at your own price with a 0% sales fee, payment is escrowed, you trade directly with the buyer, and you are paid in USDC with no identity verification at any point. Check tradeability in your Steam inventory first: some Dota 2 items are gift-wrapped, untradeable, or still inside a trade-restriction window.',
@@ -529,7 +557,7 @@ export const posts: Post[] = [
             },
             {
                 heading: 'The Escrowed Trade Flow',
-                text: 'When a buyer orders your item on SkinSlinger, their payment is held by the server - the seller does not get paid yet, and the buyer cannot lose money to a no-show. You send a Steam trade offer to the buyer\'s trade URL from your own account; your item never sits on a bot. After the buyer accepts, the server verifies the item in their inventory within about 5 minutes, then holds the payment for 8 days to cover Steam\'s trade-reversal window before releasing the full sale price to your USDC balance. The sales fee is 0%.',
+                text: 'When a buyer orders your item on SkinSlinger, their payment is held by the server - the seller does not get paid yet, and the buyer cannot lose money to a no-show. You send a Steam trade offer to the buyer\'s trade URL from your own account; your item never sits on a bot. After the buyer accepts, the server verifies the item in their inventory within about 5 minutes, then holds the payment for 8 days before releasing the full sale price to your USDC balance. The sales fee is 0%.',
             },
             {
                 heading: 'Getting Paid Without KYC',
@@ -546,6 +574,8 @@ export const posts: Post[] = [
         slug: 'tf2-unusual-marketplace-guide',
         title: 'Where to Sell TF2 Unusuals in 2026: A Marketplace Guide',
         date: 'June 11, 2026',
+        updated: 'November 16, 2026',
+        games: ['tf2'],
         summary: 'Unusual hats are the blue chips of the TF2 economy. How unusual pricing works, where the fees hide on each platform, and how to sell unusuals peer-to-peer for withdrawable USDC.',
         image: `${CDN}/IzMF03bi9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdEH9myp0erksICfSMf6UeRJpnqWSMU5OD2IwJkXVZnihXOjLx2Sk5MbUqMcbBnQz4ruyeU3f0VyTRIizcDgw4TLYxdjCMvGrzs677AXycBatzHWZYLOBTp3ofaciJPEY90NYO_2C9zhMlSEBxIsFDJly_niAXM-h3ynBKJpIGzHX3ONSH0vuPuxPC`,
         tldr: 'TF2 unusuals - hats with particle effects unboxed at roughly a 1% rate - are the highest-value items in the TF2 economy, and where you sell them matters more than for any other item class. The Steam Market takes about 15% and locks proceeds as Wallet credit; marketplace.tf charges 10%; key-based community trading is fee-free but slow and capped by key liquidity. SkinSlinger sells unusuals peer-to-peer at a 0% sales fee with USDC payouts and no KYC: the buyer\'s payment is escrowed, you trade hat-for-nothing directly to their backpack, and the full price is released to you.',
@@ -563,11 +593,11 @@ export const posts: Post[] = [
             },
             {
                 heading: 'Selling Unusuals Peer-to-Peer on SkinSlinger',
-                text: 'List the unusual from your backpack at your own dollar price - the sales fee is 0%, so the listed price is what you receive. When a buyer orders, their payment is escrowed by the server. You send the Steam trade offer directly to the buyer\'s trade URL; the hat moves from your backpack to theirs without a bot ever holding it. Once the server verifies delivery - it checks the buyer\'s inventory every 5 minutes - the full amount is credited to your balance in USDC after an 8-day trade-reversal hold.',
+                text: 'List the unusual from your backpack at your own dollar price - the sales fee is 0%, so the listed price is what you receive. When a buyer orders, their payment is escrowed by the server. You send the Steam trade offer directly to the buyer\'s trade URL; the hat moves from your backpack to theirs without a bot ever holding it. Once the server verifies delivery - it checks the buyer\'s inventory every 5 minutes - the full amount is credited to your balance in USDC after an 8-day hold.',
             },
             {
                 heading: 'Cashing Out a High-Value Sale',
-                text: 'USDC withdrawals go to any Polygon wallet and confirm in minutes, with no identity verification at any amount - relevant for unusual sellers specifically, because a single sale can cross the payout thresholds at which other platforms demand documents. The withdrawal fee starts at 2.5%, so a $500 unusual sale costs at most $12.50 end to end, against $50 on a 10% platform or $75 in locked credit on Steam.',
+                text: 'USDC withdrawals go to any Polygon wallet and confirm in minutes, with no identity verification at any amount. The withdrawal fee starts at 2.5%, so a $500 unusual sale costs at most $12.50 end to end, against $50 on a 10% platform or $75 in locked credit on Steam.',
             },
             {
                 heading: 'Listing Tips for Unusual Sellers',

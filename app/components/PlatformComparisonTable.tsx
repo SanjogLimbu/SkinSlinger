@@ -3,7 +3,7 @@ const platformComparisons = [
     { name: 'CSFloat',     sales: '2%',  deposit: '2.8%', withdrawal: '0.5%', total: '5.3%' },
     { name: 'CS.Money',    sales: '7%',  deposit: '0%',   withdrawal: '0%',   total: '7%' },
     { name: 'Skinport',    sales: '8%',  deposit: '0%',   withdrawal: '0%',   total: '8%' },
-    { name: 'DMarket',     sales: '7%',  deposit: '0%',   withdrawal: '2.5%', total: '9.5%' },
+    { name: 'DMarket',     sales: '7%',  deposit: '0%',   withdrawal: '2.5%', total: '9.3%' },
     { name: 'Steam Market',sales: '15%', deposit: '0%',   withdrawal: 'N/A',  total: '15%+' },
 ]
 

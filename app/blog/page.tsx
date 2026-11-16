@@ -7,6 +7,7 @@ import { posts } from './posts'
 export const metadata: Metadata = {
     title: 'Blog',
     description: 'Guides, tips, and news from the SkinSlinger team.',
+    alternates: { canonical: '/blog' },
 }
 
 //

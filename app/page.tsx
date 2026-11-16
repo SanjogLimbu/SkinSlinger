@@ -45,11 +45,11 @@ const steps = [
     },
     {
         title: "Server verifies the trade",
-        desc: "Every 5 minutes, the server checks your Steam inventory to confirm the item was received. If your inventory is private, it will assume the trade was successful",
+        desc: "Every 5 minutes, the server checks your Steam inventory to confirm the item was received. Keep your inventory public, as a private inventory can't be checked and the order waits until it can.",
     },
     {
         title: "Seller gets paid",
-        desc: "Once confirmed, the held funds are released to the seller's balance.",
+        desc: "8 days after delivery, the held funds are released to the seller's balance. The hold covers Steam's trade-reversal window on CS2 items.",
     },
 ]
 
@@ -67,8 +67,8 @@ export const metadata: Metadata = {
         images: [
             {
                 url: '/logo.png',
-                width: 512,
-                height: 512,
+                width: 251,
+                height: 251,
                 alt: 'SkinSlinger',
             },
         ],
@@ -106,14 +106,14 @@ const organizationJsonLd = {
     "logo": {
         "@type": "ImageObject",
         "url": `${base}/logo.png`,
-        "width": 512,
-        "height": 512,
+        "width": 251,
+        "height": 251,
     },
     "description": "P2P skins marketplace with 0% sales fee, no KYC, and crypto payments.",
     "address": {
         "@type": "PostalAddress",
         "streetAddress": "Cobham House, 9 Warwick Court",
-        "addressLocality": "Midtown",
+        "addressLocality": "London",
         "postalCode": "WC1R 5DJ",
         "addressCountry": "GB",
     },
@@ -421,6 +421,20 @@ function Footer() {
                 </div>
 
                 <div className="flex gap-6">
+                    <Link
+                        href="/market/cs2"
+                        className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                        Market
+                    </Link>
+
+                    <Link
+                        href="/blog"
+                        className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                        Blog
+                    </Link>
+
                     <a
                         href="mailto:support@skinslinger.com"
                         className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
@@ -437,7 +451,7 @@ function Footer() {
                 </div>
 
                 <p className="text-xs text-gray-600 text-center">
-                    Cobham House, 9 Warwick Court, Midtown, WC1R 5DJ
+                    Cobham House, 9 Warwick Court, London, WC1R 5DJ
                 </p>
 
                 <div className="border-t border-gray-700/40 w-full pt-5 flex flex-col items-center gap-2">

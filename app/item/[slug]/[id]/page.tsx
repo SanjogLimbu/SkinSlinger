@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { cache, Suspense } from "react"
@@ -7,7 +7,7 @@ import type { Metadata } from "next"
 import BuyButton from "./BuyButton"
 import FloatBar from "@/app/components/FloatBar"
 import PriceHistory from "@/app/components/PriceHistory"
-import { GAME_NAMES, GAME_SLUGS, getBaseUrl, JsonLd } from "@/app/lib/site"
+import { GAME_NAMES, GAME_SLUGS, getBaseUrl, JsonLd, toSlug } from "@/app/lib/site"
 import { RARITIES, rarityBackground } from "@/lib/rarity"
 
 //
@@ -89,7 +89,7 @@ const getListing = cache(async (id: string) => {
 //
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const { slug, id } = await params
+    const { id } = await params
     const data = await getListing(id)
 
     if (!data) {
@@ -98,18 +98,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 
     const { listing } = data
+    const itemSlug = toSlug(listing.marketName)
     const gameName = GAME_NAMES[listing.game!] ?? listing.game!
-    const title = `${listing.marketName} - ${gameName} - SkinSlinger`
+    const title = `${listing.marketName} - ${gameName}`
     const description = `Buy ${listing.marketName}. No KYC, 0% sales fee, pay with crypto. Your ${gameName} skin marketplace.`
 
     return {
         title,
         description,
-        alternates: { canonical: `/item/${slug}` },
+        alternates: { canonical: `/item/${itemSlug}` },
         openGraph: {
             title,
             description,
-            url: `/item/${slug}/${id}`,
+            url: `/item/${itemSlug}`,
             images: [{ url: listing.icon!, alt: listing.marketName }],
         },
         twitter: {
@@ -134,6 +135,14 @@ export default async function ItemPage({ params, searchParams }: PageProps) {
 
 
     const { listing, float, commodityCount, seller, inspectLink } = data
+    const itemSlug = toSlug(listing.marketName)
+
+    // Any other slug would serve this listing under a URL whose canonical 404s.
+    if (slug !== itemSlug) {
+        permanentRedirect(`/item/${itemSlug}/${id}`)
+    }
+
+
     const gameName = GAME_NAMES[listing.game!] ?? listing.game!
     const gameSlug = GAME_SLUGS[listing.game!] ?? "cs2"
 
@@ -165,7 +174,7 @@ export default async function ItemPage({ params, searchParams }: PageProps) {
         "@context": "https://schema.org/",
         "@type": "Product",
         "name": `${listing.marketName} - ${gameName}`,
-        "url": `${base}/item/${slug}/${id}`,
+        "url": `${base}/item/${slug}`,
         "image": listing.icon,
         "description": `Buy ${listing.marketName}. No KYC, 0% sales fee, pay with crypto.`,
         "offers": {
@@ -203,12 +212,6 @@ export default async function ItemPage({ params, searchParams }: PageProps) {
                 "position": 3,
                 "name": listing.marketName,
                 "item": `${base}/item/${slug}`,
-            },
-            {
-                "@type": "ListItem",
-                "position": 4,
-                "name": `$${listing.price.toFixed(2)}`,
-                "item": `${base}/item/${slug}/${id}`,
             },
         ],
     }
@@ -256,7 +259,8 @@ export default async function ItemPage({ params, searchParams }: PageProps) {
                             width={360}
                             height={360}
                             style={iconStyle}
-                            priority
+                            loading="eager"
+                            fetchPriority="high"
                         />
                     </div>
 

@@ -30,8 +30,8 @@ export const viewport: Viewport = {
 
 const OG_IMAGE = {
     url: '/logo.png',
-    width: 512,
-    height: 512,
+    width: 251,
+    height: 251,
     alt: 'SkinSlinger',
 }
 

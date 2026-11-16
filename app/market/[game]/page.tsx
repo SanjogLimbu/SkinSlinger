@@ -5,7 +5,9 @@ import { authOptions } from "@/lib/auth"
 import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import type { Metadata } from 'next'
+import Link from "next/link"
 import { toSlug, getBaseUrl, JsonLd } from "@/app/lib/site"
+import { posts, type GameSlug } from "@/app/blog/posts"
 
 //
 
@@ -14,7 +16,11 @@ const PAGE_SIZE = 30
 type GameConfig = {
     dbValue: string
     displayName: string
-    slug: string
+    slug: GameSlug
+    title: string
+    description: string
+    heading: string
+    intro: string
 }
 
 type Props = { params: Promise<{ game: string }> }
@@ -24,29 +30,99 @@ const GAMES: Record<string, GameConfig> = {
         dbValue: "CS2",
         displayName: "CS2",
         slug: "cs2",
+        title: "Buy & Sell CS2 Skins with Crypto",
+        description: "Buy and sell CS2 skins peer-to-peer with USDC. 0% sales fee, no KYC, and every payment held until the skin reaches the buyer's Steam inventory.",
+        heading: "CS2 Skins Marketplace",
+        intro: "Buy and sell Counter-Strike 2 skins directly with other players. Pay with USDC on Polygon, see the float, pattern and stickers on each listing, and pay no sales fee. Your payment is held until the skin is confirmed in your inventory.",
     },
     dota2: {
         dbValue: "Dota2",
         displayName: "Dota 2",
         slug: "dota2",
+        title: "Buy & Sell Dota 2 Items with Crypto",
+        description: "Buy and sell Dota 2 items peer-to-peer with USDC. 0% sales fee, no KYC, and every payment held until the item reaches the buyer's Steam inventory.",
+        heading: "Dota 2 Items Marketplace",
+        intro: "Buy and sell Dota 2 items directly with other players. Pay with USDC on Polygon and pay no sales fee. Your payment is held until the item is confirmed in your inventory.",
     },
     rust: {
         dbValue: "Rust",
         displayName: "Rust",
         slug: "rust",
+        title: "Buy & Sell Rust Skins with Crypto",
+        description: "Buy and sell Rust skins peer-to-peer with USDC. 0% sales fee, no KYC, and every payment held until the skin reaches the buyer's Steam inventory.",
+        heading: "Rust Skins Marketplace",
+        intro: "Buy and sell Rust skins directly with other players. Pay with USDC on Polygon and pay no sales fee. Your payment is held until the skin is confirmed in your inventory.",
     },
     tf2: {
         dbValue: "TF2",
         displayName: "TF2",
         slug: "tf2",
+        title: "Buy & Sell TF2 Items with Crypto",
+        description: "Buy and sell Team Fortress 2 items peer-to-peer with USDC. 0% sales fee, no KYC, and every payment held until the item reaches the buyer's Steam inventory.",
+        heading: "TF2 Items Marketplace",
+        intro: "Buy and sell Team Fortress 2 items directly with other players. Pay with USDC on Polygon and pay no sales fee. Your payment is held until the item is confirmed in your inventory.",
     },
 }
 
 const OG_IMAGE = {
     url: '/logo.png',
-    width: 512,
-    height: 512,
+    width: 251,
+    height: 251,
     alt: 'SkinSlinger',
+}
+
+//
+
+function MarketHeader({ config }: { config: GameConfig }) {
+    return (
+        <div className="flex flex-col gap-1 mb-3">
+            <h1 className="text-lg font-semibold">
+                {config.heading}
+            </h1>
+
+            <p className="text-xs text-gray-400 max-w-3xl">
+                {config.intro}{" "}
+
+                <Link
+                    href={`/market/${config.slug}/items`}
+                    className="text-gray-200 hover:underline"
+                >
+                    Browse every {config.displayName} item A-Z
+                </Link>
+            </p>
+        </div>
+    )
+}
+
+
+function MarketFooter({ config }: { config: GameConfig }) {
+    const guides = posts.filter(p => p.games.includes(config.slug))
+
+    if (!guides.length) {
+        return null
+    }
+
+
+    return (
+        <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-gray-800">
+            <h2 className="text-sm font-semibold">
+                {config.displayName} guides
+            </h2>
+
+            <ul className="flex flex-col gap-1.5 text-xs">
+                {guides.map(p => (
+                    <li key={p.slug}>
+                        <Link
+                            href={`/blog/${p.slug}`}
+                            className="text-gray-400 hover:text-white hover:underline"
+                        >
+                            {p.title}
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    )
 }
 
 //
@@ -60,19 +136,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
 
-    const title = config.displayName
+    const { title, description } = config
 
     return {
         title,
+        description,
         alternates: { canonical: `/market/${config.slug}` },
         openGraph: {
             title,
+            description,
             url: `/market/${config.slug}`,
             images: [OG_IMAGE],
         },
         twitter: {
             card: 'summary',
             title,
+            description,
             images: ['/logo.png'],
         },
     }
@@ -203,6 +282,8 @@ export default async function GameMarketPage({ params }: Props) {
                     currentUserId={currentUserId}
                     hasPendingPurchase={hasPendingPurchase}
                     initialGame={config.dbValue as "CS2" | "Dota2" | "Rust" | "TF2"}
+                    header={<MarketHeader config={config} />}
+                    footer={<MarketFooter config={config} />}
                 />
             </Suspense>
 

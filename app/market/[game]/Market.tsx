@@ -49,6 +49,9 @@ type Filters = {
 
 const FILTER_KEYS = ["search", "minPrice", "maxPrice", "wear", "minFloat", "maxFloat", "type", "rarity"] as const
 
+// Roughly the first row on wide screens, which is the LCP image.
+const EAGER_CARDS = 6
+
 //
 
 function hasActiveFilters(f: Filters): boolean {
@@ -94,12 +97,16 @@ export default function HomeClient(
         currentUserId,
         hasPendingPurchase,
         initialGame,
+        header,
+        footer,
     }: {
         initialListings: ListingCard[],
         initialHasMore: boolean,
         currentUserId: string | null,
         hasPendingPurchase: boolean,
         initialGame?: GameFilter,
+        header?: React.ReactNode,
+        footer?: React.ReactNode,
     })
     {
 
@@ -467,6 +474,7 @@ export default function HomeClient(
                     <input
                         type="text"
                         placeholder="Search items..."
+                        aria-label="Search items"
                         value={filters.search}
                         onChange={e => setFilter("search", e.target.value)}
                         className="bg-accent rounded-sm h-9 w-full px-3 outline-none border border-gray-500 text-sm"
@@ -474,8 +482,10 @@ export default function HomeClient(
                 </div>
 
                 <div className="border border-gray-800 frame-shadow overflow-y-auto flex-1 min-h-0 p-3 rounded-sm flex flex-col">
+                    {header}
+
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 justify-start content-start gap-2">
-                        {displayListings.map(listing => {
+                        {displayListings.map((listing, i) => {
                             const itemPage = `/item/${toSlug(listing.marketName)}`
                             const listingPage = listing.commodity ? itemPage : `${itemPage}/${listing.id}`
 
@@ -484,6 +494,7 @@ export default function HomeClient(
                                     key={listing.id}
                                     {...listing}
                                     currentUserId={currentUserId}
+                                    eager={i < EAGER_CARDS}
                                     onBuy={() => listing.commodity ? router.push(itemPage) : handleBuy(listing)}
                                     onPreview={() => router.push(listingPage)}
                                 />
@@ -495,6 +506,8 @@ export default function HomeClient(
                         ref={sentinelRef}
                         className="h-1 shrink-0"
                     />
+
+                    {footer}
                 </div>
             </div>
         </>

@@ -242,7 +242,8 @@ export default function ItemPageClient({
                                 width={180}
                                 height={180}
                                 style={{ width: 'auto', height: 'auto', maxHeight: 180 }}
-                                priority
+                                loading="eager"
+                                fetchPriority="high"
                             />
                         </div>
 

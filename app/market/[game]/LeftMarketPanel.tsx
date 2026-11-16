@@ -61,10 +61,11 @@ function sliderValue(input: string, fallback: number, max: number): number {
 }
 
 
-function PriceInput({ value, onChange, placeholder, className }: {
+function PriceInput({ value, onChange, placeholder, label, className }: {
     value: string,
     onChange: (v: string) => void,
     placeholder: string,
+    label: string,
     className: string,
 }) {
     return (
@@ -78,6 +79,7 @@ function PriceInput({ value, onChange, placeholder, className }: {
                 min={0}
                 step={0.01}
                 placeholder={placeholder}
+                aria-label={label}
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 className="bg-transparent text-xs w-full outline-none"
@@ -187,6 +189,7 @@ export default function LeftPanel({
 
                             <input
                                 type="range"
+                                aria-label="Minimum price"
                                 min={0}
                                 max={SLIDER_MAX}
                                 step={1}
@@ -200,6 +203,7 @@ export default function LeftPanel({
 
                             <input
                                 type="range"
+                                aria-label="Maximum price"
                                 min={0}
                                 max={SLIDER_MAX}
                                 step={1}
@@ -218,6 +222,7 @@ export default function LeftPanel({
                             <PriceInput
                                 value={minPrice}
                                 onChange={setMinPrice}
+                                label="Minimum price"
                                 placeholder="0.00"
                                 className="flex-1"
                             />
@@ -229,6 +234,7 @@ export default function LeftPanel({
                             <PriceInput
                                 value={maxPrice}
                                 onChange={setMaxPrice}
+                                label="Maximum price"
                                 placeholder="All"
                                 className="flex-1"
                             />
@@ -315,6 +321,7 @@ export default function LeftPanel({
 
                                 <input
                                     type="range"
+                                    aria-label="Minimum float"
                                     min={0}
                                     max={FLOAT_MAX}
                                     step={0.001}
@@ -328,6 +335,7 @@ export default function LeftPanel({
 
                                 <input
                                     type="range"
+                                    aria-label="Maximum float"
                                     min={0}
                                     max={FLOAT_MAX}
                                     step={0.001}
@@ -349,6 +357,7 @@ export default function LeftPanel({
                                     max={1}
                                     step={0.001}
                                     placeholder="0.000"
+                                    aria-label="Minimum float"
                                     value={minFloat}
                                     onChange={e => setMinFloat(e.target.value)}
                                     className="flex-1 min-w-0 bg-accent rounded-sm px-2 h-7 text-xs outline-none"
@@ -364,6 +373,7 @@ export default function LeftPanel({
                                     max={1}
                                     step={0.001}
                                     placeholder="1.000"
+                                    aria-label="Maximum float"
                                     value={maxFloat}
                                     onChange={e => setMaxFloat(e.target.value)}
                                     className="flex-1 min-w-0 bg-accent rounded-sm px-2 h-7 text-xs outline-none"
@@ -453,6 +463,7 @@ export default function LeftPanel({
                     <PriceInput
                         value={minPrice}
                         onChange={setMinPrice}
+                        label="Minimum price"
                         placeholder="0"
                         className="w-24 shrink-0"
                     />
@@ -464,6 +475,7 @@ export default function LeftPanel({
                     <PriceInput
                         value={maxPrice}
                         onChange={setMaxPrice}
+                        label="Maximum price"
                         placeholder="All"
                         className="w-24 shrink-0"
                     />

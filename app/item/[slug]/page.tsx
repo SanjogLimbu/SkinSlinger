@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const { marketName, inv } = data
     const gameName = GAME_NAMES[inv.game] ?? inv.game
-    const title = `${marketName} - ${gameName} - SkinSlinger`
+    const title = `${marketName} - ${gameName}`
     const description = `Buy ${marketName}. No KYC, 0% sales fee, pay with crypto. Your ${gameName} skin marketplace.`
 
     return {
