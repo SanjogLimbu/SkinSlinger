@@ -7,7 +7,7 @@ import { Suspense } from "react"
 import type { Metadata } from 'next'
 import Link from "next/link"
 import { toSlug, getBaseUrl, JsonLd } from "@/app/lib/site"
-import { posts, type GameSlug } from "@/app/blog/posts"
+import type { GameSlug } from "@/app/blog/posts"
 
 //
 
@@ -90,37 +90,6 @@ function MarketHeader({ config }: { config: GameConfig }) {
                     Browse every {config.displayName} item A-Z
                 </Link>
             </p>
-        </div>
-    )
-}
-
-
-function MarketFooter({ config }: { config: GameConfig }) {
-    const guides = posts.filter(p => p.games.includes(config.slug))
-
-    if (!guides.length) {
-        return null
-    }
-
-
-    return (
-        <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-gray-800">
-            <h2 className="text-sm font-semibold">
-                {config.displayName} guides
-            </h2>
-
-            <ul className="flex flex-col gap-1.5 text-xs">
-                {guides.map(p => (
-                    <li key={p.slug}>
-                        <Link
-                            href={`/blog/${p.slug}`}
-                            className="text-gray-400 hover:text-white hover:underline"
-                        >
-                            {p.title}
-                        </Link>
-                    </li>
-                ))}
-            </ul>
         </div>
     )
 }
@@ -283,7 +252,6 @@ export default async function GameMarketPage({ params }: Props) {
                     hasPendingPurchase={hasPendingPurchase}
                     initialGame={config.dbValue as "CS2" | "Dota2" | "Rust" | "TF2"}
                     header={<MarketHeader config={config} />}
-                    footer={<MarketFooter config={config} />}
                 />
             </Suspense>
 

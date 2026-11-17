@@ -98,7 +98,6 @@ export default function HomeClient(
         hasPendingPurchase,
         initialGame,
         header,
-        footer,
     }: {
         initialListings: ListingCard[],
         initialHasMore: boolean,
@@ -106,7 +105,6 @@ export default function HomeClient(
         hasPendingPurchase: boolean,
         initialGame?: GameFilter,
         header?: React.ReactNode,
-        footer?: React.ReactNode,
     })
     {
 
@@ -506,8 +504,6 @@ export default function HomeClient(
                         ref={sentinelRef}
                         className="h-1 shrink-0"
                     />
-
-                    {footer}
                 </div>
             </div>
         </>

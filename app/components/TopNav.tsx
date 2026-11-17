@@ -130,10 +130,6 @@ export default function TopNav() {
                         <Link href="/market/cs2" className="right-nav-link button">
                             Market
                         </Link>
-
-                        <Link href="/blog" className="right-nav-link button">
-                            Blog
-                        </Link>
                     </div>
 
                     <div className="flex h-full items-center gap-3">
@@ -228,14 +224,6 @@ export default function TopNav() {
                                 Market
                             </Link>
 
-                            <Link
-                                href="/blog"
-                                className="mobile_menu_button button"
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                Blog
-                            </Link>
-
                             <PageLinks
                                 className="mobile_menu_button button"
                                 showOrders={showOrders}
@@ -258,14 +246,6 @@ export default function TopNav() {
                                 onClick={() => setMenuOpen(false)}
                             >
                                 Market
-                            </Link>
-
-                            <Link
-                                href="/blog"
-                                className="mobile_menu_button button"
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                Blog
                             </Link>
                         </>
                     ))}
